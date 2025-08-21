@@ -40,20 +40,19 @@ A opção de uma margem de lucro manipulável também é uma possibilidade, ela 
 - Sem tempo do professor: Realizar testes com outros 3 usuários.
 
 ## ✔️ Hipóteses e validação
-H-Valor: Se [X], então [Y] melhora em [critério].
-Validação (valor): [teste rápido/observação]; alvo: [meta simples].
-H-Viabilidade: Com [tecnologia], [ação/tela] leva até [n] s.
-Validação (viabilidade): [medição no protótipo]; meta: [n] s ou menos na maioria das
-vezes (ex.: 9/10).
+Valor: Se o usuário visualiza os ingredientes cadastrados, consegue organizar melhor suas receitas.
+
+Validação: Teste com 4 usuários distintos em máquinas diferentes. Sucesso caso 3≥ conseguem visualizar os registros corretamente.
+
+Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mínimo 17/20 (9/10)ações com no máximo 1s de resposta.
 
 ## 📈 Fluxo principal e primeira fatia
 **Fluxo principal (curto):**
-1) [entrada do usuário] → 2) [processo] → 3) [salvar algo] → 4) [mostrar resultado]
-**Primeira fatia vertical (escopo mínimo):**
-Inclui: [uma tela], [uma ação principal], [salvar], [mostrar algo]
-Critérios de aceite:
-- [Condição 1 bem objetiva]
-- [Condição 2 bem objetiva]
+1) Usuário entra no site;
+2) Usuário faz login ou cadastro;
+3) Usuário clica em adicionar ingredientes;
+4) Usuário salva os ingredientes;
+5) Ingredientes são exibidos ao usuário.
 
 ## 💻 Esboços de algumas telas (wireframes)
 [Links ou imagens dos seus rascunhos de telas aqui]
@@ -61,16 +60,23 @@ Critérios de aceite:
 ## ⚙️ Tecnologias
 
 ### 8.1 Navegador
-**Navegador:** [HTML/CSS/JS | React/Vue/Bootstrap/etc., se houver]
-**Armazenamento local (se usar):** [LocalStorage/IndexedDB/—]
-**Hospedagem:** [GitHub Pages/—]
+**Navegador:** [HTML/CSS/JS/Bootstrap]
+
+**Armazenamento local (se usar):** [LocalStorage]
+
+**Hospedagem:** [GitHub Pages]
+
 ### 8.2 Front-end (servidor de aplicação, se existir)
-**Front-end (servidor):** [ex.: Next.js/React/—]
-**Hospedagem:** [ex.: Vercel/—]
+**Front-end (servidor):** [React]
+
+**Hospedagem:** [GitHub Pages]
+
 ### 8.3 Back-end (API/servidor, se existir)
-**Back-end (API):** [ex.: FastAPI/Express/PHP/Laravel/Spring/—]
-**Banco de dados:** [ex.: SQLite/Postgres/MySQL/MongoDB/—]
-**Deploy do back-end:** [ex.: Render/Railway/—]
+**Back-end (API):** [Javascript + Express]
+
+**Banco de dados:** [Postgres/MySQL]
+
+**Deploy do back-end:** [Render] "Verificando possibilidades de uso"
 
 ## 📋 Plano de Dados (Dia 0) — somente itens 1–3
 
@@ -88,18 +94,26 @@ Critérios de aceite:
 | nome | texto | sim | "Ana Souza" |
 | email | texto | sim (único) | "ana@exemplo.com" |
 | senha_hash | texto | sim | "$2a$10$..." |
-| papel | número (0=aluno, 1=professor) | sim | 0 |
-| dataCriacao | data/hora | sim | 2025-08-20 14:30 |
-| dataAtualizacao | data/hora | sim | 2025-08-20 15:10 |
-### Chamado
+
+### Ingredientes
 | Campo | Tipo | Obrigatório | Exemplo |
 |-----------------|--------------------|-------------|-------------------------|
 | id | número | sim | 2 |
-| Usuario_id | número (fk) | sim | 8f3a-... |
-| texto | texto | sim | "Erro ao compilar" |
-| estado | char | sim | 'a' \| 'f' |
-| dataCriacao | data/hora | sim | 2025-08-20 14:35 |
-| dataAtualizacao | data/hora | sim | 2025-08-20 14:50 |
+| nome | texto | sim | "Granulado" |
+| marca | texto | sim | "Nome marca" |
+| preco | número | sim | 4,99|
+| tipo | char | sim | "kg" |
+| quantidade | número | sim | 3 |
+
+### Receitas
+| Campo | Tipo | Obrigatório | Exemplo |
+|-----------------|--------------------|-------------|-------------------------|
+| id | número | sim | 2 |
+| nome | texto | sim | "Granulado" |
+| ingredientes | número (fk) | sim | 1,3,2 |
+| preco | número | sim | 4,99|
+| tipo | char | sim | "kg" |
+| quantidade | número | sim | 3 |
 
 ### 9.3 Relações entre entidades
 - Um [A] tem muitos [B]. (1→N)
