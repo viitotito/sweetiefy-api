@@ -113,10 +113,30 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 |-----------------|--------------------|-------------|-------------------------|
 | id | número | sim | 2 |
 | nome | texto | sim | "Granulado" |
-| ingredientes | número (fk) | sim | 1,3,2 |
+| descricao | texto | não | "Deixe no forno preaquecido por 30 minutos á 180°..." |
+| Ingredientes_id | número (fk) | sim | 1,3,2 |
+| urlImagem | texto | não | /imagem/doce.png |
 | preco | número | sim | 4,99|
 | tipo | char | sim | "kg" |
-| quantidade | número | sim | 3 |
+
+### Cliente
+| Campo | Tipo | Obrigatório | Exemplo |
+|-----------------|--------------------|-------------|-------------------------|
+| id | número | sim | 4 |
+| nome | texto | sim | "Ana" |
+| email | texto | sim |  |
+| telefone | número | sim | 4,99|
+
+### Pedidos
+| Campo | Tipo | Obrigatório | Exemplo |
+|-----------------|--------------------|-------------|-------------------------|
+| id | número | sim | 2 |
+| Receitas_id | número (fk) | sim | 1,3,2 |
+| preco_total | número | sim | 4,99 |
+| prioridade | char | 'b','m','a' | 'a' |
+| margem_lucro | número | sim | (10%) 0.1 |
+| estado | char | sim | 0aberto, fechado |
+| dataCriacao | data/hora | 
 
 ### 9.3 Relações entre entidades
 - Um [A] tem muitos [B]. (1→N)
