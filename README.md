@@ -94,6 +94,9 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 | nome | texto | sim | "Ana Souza" |
 | email | texto | sim (único) | "ana@exemplo.com" |
 | senha_hash | texto | sim | "$2a$10$..." |
+| papel | número (0=comum, 1=administrador) | sim | 0 |
+| dataCriacao | data/hora | sim | 2025-08-20 14:30 |
+| dataAtualizacao | data/hora | sim | 2025-08-20 15:10
 
 ### Ingredientes
 | Campo | Tipo | Obrigatório | Exemplo |
