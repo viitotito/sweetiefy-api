@@ -87,7 +87,7 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 
 ### 9.2 Campos por entidade
 
-### Usuario
+### Usuarios
 | Campo | Tipo | Obrigatório | Exemplo |
 |-----------------|-------------------------------|-------------|--------------------|
 | id | número | sim | 1 |
@@ -118,7 +118,7 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 | preco | número | sim | 4,99|
 | tipo | char | sim | "kg" |
 
-### Cliente
+### Clientes
 | Campo | Tipo | Obrigatório | Exemplo |
 |-----------------|--------------------|-------------|-------------------------|
 | id | número | sim | 4 |
@@ -135,7 +135,12 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 | prioridade | char | 'b','m','a' | 'a' |
 | margem_lucro | número | sim | (10%) 0.1 |
 | estado | char | sim | 0aberto, fechado |
-| dataCriacao | data/hora | 
+| dataCriacao | data/hora | sim | 2025-08-20 13:10 |
+|
+| dataAtualizacao | data/hora | sim | 2025-08-24 17:10
+|
+| dataLimite | data/hora | sim | 2025-08-25 18:15
+
 
 ### 9.3 Relações entre entidades
 - Um [A] tem muitos [B]. (1→N)
