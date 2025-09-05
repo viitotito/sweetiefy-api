@@ -17,10 +17,10 @@ A opção de uma margem de lucro manipulável também é uma possibilidade, ela 
 * Decisores/Apoiadores: Professores; Coordenação do Curso.
 
 ## 🛠 Casos de uso
-* Usuário: Logar/deslogar, cadastrar, editar, remover usuários.
-* Receita: Cadastrar, editar, remover receitas.
+* Usuários: Logar/deslogar, cadastrar, editar, remover usuários.
+* Receitas: Cadastrar, editar, remover receitas.
 * Ingredientes: Cadastrar, editar, remover ingredientes.
-* Vendas: Cadastrar, editar, remover, definir taxa, manipular histórico de vendas.
+* Pedidos: Cadastrar, editar, remover, definir taxa, manipular histórico de vendas.
 * Clientes: Cadastrar, editar, remover clientes.
 
 ## ⌛ Limites e suposições
@@ -103,17 +103,16 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 |-----------------|--------------------|-------------|-------------------------|
 | id | número | sim | 2 |
 | nome | texto | sim | "Granulado" |
-| marca | texto | sim | "Nome marca" |
 | preco | número | sim | 4,99|
-| tipo | char | sim | "kg" |
+| metrica | char | sim | "kg" |
 | quantidade | número | sim | 3 |
 
 ### Receitas
 | Campo | Tipo | Obrigatório | Exemplo |
 |-----------------|--------------------|-------------|-------------------------|
 | id | número | sim | 2 |
-| nome | texto | sim | "Granulado" |
-| descricao | texto | não | "Deixe no forno preaquecido por 30 minutos á 180°..." |
+| nome | texto | sim | "Casadinho" |
+| descricao | texto | não | "2 caixas de leite condensado..." |
 | Ingredientes_id | número (fk) | sim | 1,3,2 |
 | urlImagem | texto | não | /imagem/doce.png |
 | preco | número | sim | 4,99|
