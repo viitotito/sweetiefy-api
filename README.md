@@ -17,11 +17,11 @@ A opção de uma margem de lucro manipulável também é uma possibilidade, ela 
 * Decisores/Apoiadores: Professores; Coordenação do Curso.
 
 ## 🛠 Casos de uso
-* Usuários: Logar/deslogar, cadastrar, editar, remover usuários.
-* Receitas: Cadastrar, editar, remover receitas.
-* Ingredientes: Cadastrar, editar, remover ingredientes.
-* Pedidos: Cadastrar, editar, remover, definir taxa, manipular histórico de vendas.
-* Clientes: Cadastrar, editar, remover clientes.
+* Usuários: Logar/deslogar, CRUD usuários.
+* Receitas: CRUD receitas.
+* Ingredientes: CRUD ingredientes.
+* Pedidos: CRUD, definir taxa, manipular histórico de vendas.
+* Clientes: CRUD clientes.
 
 ## ⌛ Limites e suposições
 ### Limites
@@ -44,7 +44,7 @@ Valor: Se o usuário visualiza os ingredientes cadastrados, consegue organizar m
 
 Validação: Teste com 4 usuários distintos em máquinas diferentes. Sucesso caso 3≥ conseguem visualizar os registros corretamente.
 
-Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mínimo 17/20 (9/10)ações com no máximo 1s de resposta.
+Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mínimo 17/20 (9/10) ações com no máximo 1s de resposta.
 
 ## 📈 Fluxo principal e primeira fatia
 **Fluxo principal (curto):**
@@ -55,7 +55,8 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 5) Ingredientes são exibidos ao usuário.
 
 ## 💻 Esboços de algumas telas (wireframes)
-[Links ou imagens dos seus rascunhos de telas aqui]
+![Wireframe - Login](wireframes/WF_Login.png)
+![Wireframe - Login](wireframes/WF_Cadastro.png)
 
 ## ⚙️ Tecnologias
 
@@ -96,53 +97,64 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 | senha_hash | texto | sim | "$2a$10$..." |
 | papel | número (0=comum, 1=administrador) | sim | 0 |
 | dataCriacao | data/hora | sim | 2025-08-20 14:30 |
-| dataAtualizacao | data/hora | sim | 2025-08-20 15:10
+| dataAtualizacao | data/hora | sim | 2025-08-20 15:10 |
 
 ### Ingredientes
 | Campo | Tipo | Obrigatório | Exemplo |
 |-----------------|--------------------|-------------|-------------------------|
 | id | número | sim | 2 |
-| nome | texto | sim | "Granulado" |
-| preco | número | sim | 4,99|
-| metrica | char | sim | "kg" |
-| quantidade | número | sim | 3 |
+| nome | texto | sim | "Chocolate Granulado" |
+| preco | número | sim | 4,99 |
+| metrica_id | número (fk) | sim | 1 |
+| usuario_id | número (fk) | sim | 1 |
+| dataCriacao | data/hora | sim | 2025-08-20 14:30 |
+| dataAtualizacao | data/hora | sim | 2025-08-20 15:10 |
 
 ### Receitas
 | Campo | Tipo | Obrigatório | Exemplo |
 |-----------------|--------------------|-------------|-------------------------|
-| id | número | sim | 2 |
+| id | número | sim | 3 |
 | nome | texto | sim | "Casadinho" |
 | descricao | texto | não | "2 caixas de leite condensado..." |
-| Ingredientes_id | número (fk) | sim | 1,3,2 |
-| urlImagem | texto | não | /imagem/doce.png |
+| ingrediente_id | número (fk) | sim | 1 |
+| quantidade | número | sim | 3 |
+| usuario_id | número (fk) | sim | 1 |
+| imagem_url | texto | não | /imagem/doce.png |
 | preco | número | sim | 4,99|
-| tipo | char | sim | "kg" |
+
+| dataCriacao | data/hora | sim | 2025-08-20 14:30 |
+| dataAtualizacao | data/hora | sim | 2025-08-20 15:10 |
 
 ### Clientes
 | Campo | Tipo | Obrigatório | Exemplo |
 |-----------------|--------------------|-------------|-------------------------|
 | id | número | sim | 4 |
 | nome | texto | sim | "Ana" |
-| email | texto | sim |  |
-| telefone | número | sim | 4,99|
+| email | texto | sim | "ana@gmail.com" |
+| telefone | número | sim | 4,99 |
+| endereço | texto | sim | Av. Papa João XXIII |
+| usuario_id | número (fk) | sim | 1 |
+| dataCriacao | data/hora | sim | 2025-08-20 14:30 |
+| dataAtualizacao | data/hora | sim | 2025-08-20 15:10 |
 
 ### Pedidos
 | Campo | Tipo | Obrigatório | Exemplo |
 |-----------------|--------------------|-------------|-------------------------|
-| id | número | sim | 2 |
-| Receitas_id | número (fk) | sim | 1,3,2 |
+| id | número | sim | 5 |
+| receita_id | número (fk) | sim | 3 |
+| cliente_id | número (fk) | sim | 2 |
+| usuario_id | número (fk) | sim | 1 |
 | preco_total | número | sim | 4,99 |
 | prioridade | char | 'b','m','a' | 'a' |
 | margem_lucro | número | sim | (10%) 0.1 |
-| estado | char | sim | 0aberto, fechado |
+| estado | char | sim | 'a','f' | 'a' |
 | dataCriacao | data/hora | sim | 2025-08-20 13:10 |
-|
 | dataAtualizacao | data/hora | sim | 2025-08-24 17:10
-|
 | dataLimite | data/hora | sim | 2025-08-25 18:15
 
-
 ### 9.3 Relações entre entidades
-- Um [A] tem muitos [B]. (1→N)
-- Um [B] pertence a um [A]. (N→1)
+- Receitas ↔ Ingredientes (N↔N) → tabela Receita_Ingrediente
+- Clientes → Pedidos (1→N)
+- Pedidos ↔ Receitas (N↔N) → tabela Pedido_Receita
+
 
