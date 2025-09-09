@@ -1,4 +1,3 @@
-
 # Sweetiefy
 
 ## 💡 Problema 
@@ -82,9 +81,11 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 ## 📋 Plano de Dados (Dia 0) — somente itens 1–3
 
 ### 9.1 Entidades
-- [Entidade 1] — [o que representa em 1 linha]
-- [Entidade 2] — [...]
-- [Entidade 3] — [...]
+- Usuarios — Representa os indivíduos que utilizaram o sistema
+- Ingredientes — Representa os ingredientes utilizados em receitas
+- Receitas — Representa as receitas criadas no sistema
+- Clientes — Representa os indivíduos que realizaram os pedidos
+- Pedidos — Representa os pedidos realizados das receitas
 
 ### 9.2 Campos por entidade
 
