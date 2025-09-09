@@ -196,7 +196,7 @@ CREATE TABLE usuarios (
     nome VARCHAR(100) NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
     senha_hash VARCHAR(255) NOT NULL,
-    perfil SMALLINT NOT NULL CHECK (papel IN (0,1)), -- Usuario,Admin
+    perfil SMALLINT NOT NULL CHECK (perfil IN (0,1)), -- Usuario,Admin
     data_criacao TIMESTAMP NOT NULL,
     data_atualizacao TIMESTAMP NOT NULL
 );
@@ -270,7 +270,7 @@ CREATE TABLE pedidos_receitas (
 --Comandos DML:
 
 --Inserção usuários
-INSERT INTO usuarios (nome, email, senha_hash, papel, data_criacao, data_atualizacao)
+INSERT INTO usuarios (nome, email, senha_hash, perfil, data_criacao, data_atualizacao)
 VALUES
 ('Ana Souza', 'ana@exemplo.com', '$2a$10$abcdef...', 0, NOW(), NOW()),
 ('João Silva', 'joao@exemplo.com', '$2a$10$ghijkl...', 1, NOW(), NOW());
@@ -296,14 +296,20 @@ VALUES
 --Inserção clientes
 INSERT INTO clientes (nome, email, telefone, endereco, usuario_id, data_criacao, data_atualizacao)
 VALUES
-('Carlos Mendes', 'carlos@gmail.com', '(49) 9192-7122', 'Av. Papa João XXIII', 1, '2025-08-20 14:30', NOW(), NOW()),
-('Mariana Lima', 'mariana@gmail.com', '(49) 9181-3344', 'Rua Blumenau, 123', 2, '2025-08-20 14:35', NOW(), NOW());
+('Carlos Mendes', 'carlos@gmail.com', '(49) 9192-7122', 'Av. Papa João XXIII', 1, NOW(), NOW()),
+('Mariana Lima', 'mariana@gmail.com', '(49) 9181-3344', 'Rua Blumenau, 123', 2, NOW(), NOW());
 
 --Inserção pedidos
 INSERT INTO pedidos (cliente_id, usuario_id, preco_total, prioridade, margem_lucro, estado, data_criacao, data_atualizacao, data_limite)
 VALUES
-(1, 1, 4.99, 'Alta', 0.1, 'Aberto', '2025-08-20 13:10', NOW(), NOW()),
-(2, 2, 7.50, 'Media', 0.15, 'Aberto', '2025-08-21 10:00', NOW(), NOW());
+(1, 1, 4.99, 'Alta', 0.1, 'Aberto', NOW(), NOW(),NOW()),
+(2, 2, 7.50, 'Media', 0.15, 'Aberto', NOW(), NOW(),NOW());
+
+--Inserção pedidos_receitas
+INSERT INTO pedidos_receitas (pedido_id, receita_id, quantidade, preco_unitario)
+VALUES
+(1, 1, 10, 4.99),
+(2, 2, 20, 3.50);
 
 --Inserção pedidos_receitas
 INSERT INTO pedidos_receitas (pedido_id, receita_id, quantidade, preco_unitario)
