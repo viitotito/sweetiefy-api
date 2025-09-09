@@ -105,7 +105,7 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 | id | número | sim | 2 |
 | nome | texto | sim | "Chocolate Granulado" |
 | preco | número | sim | 4,99 |
-| metrica_id | número (fk) | sim | 1 |
+| metrica | enum | sim | 1 |
 | usuario_id | número (fk) | sim | 1 |
 | dataCriacao | data/hora | sim | 2025-08-20 14:30 |
 | dataAtualizacao | data/hora | sim | 2025-08-20 15:10 |
@@ -116,14 +116,19 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 | id | número | sim | 3 |
 | nome | texto | sim | "Casadinho" |
 | descricao | texto | não | "2 caixas de leite condensado..." |
-| ingrediente_id | número (fk) | sim | 1 |
-| quantidade | número | sim | 3 |
 | usuario_id | número (fk) | sim | 1 |
 | imagem_url | texto | não | /imagem/doce.png |
-| preco | número | sim | 4,99|
-
+| preco | número | sim | 4,99 |
 | dataCriacao | data/hora | sim | 2025-08-20 14:30 |
 | dataAtualizacao | data/hora | sim | 2025-08-20 15:10 |
+
+### Receitas_Ingredientes
+| Campo | Tipo | Obrigatório | Exemplo |
+|-----------------|--------------------|-------------|-------------------------|
+| id | número | sim | 3 |
+| receita_id | número (fk) | sim | 1 |
+| ingrediente_id | número (fk) | sim | 1 |
+| quantidade | número | sim | 3 |
 
 ### Clientes
 | Campo | Tipo | Obrigatório | Exemplo |
@@ -131,8 +136,8 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 | id | número | sim | 4 |
 | nome | texto | sim | "Ana" |
 | email | texto | sim | "ana@gmail.com" |
-| telefone | número | sim | 4,99 |
-| endereço | texto | sim | Av. Papa João XXIII |
+| telefone | texto | sim | (49) 9192-7122 |
+| endereço | texto | não | Av. Papa João XXIII |
 | usuario_id | número (fk) | sim | 1 |
 | dataCriacao | data/hora | sim | 2025-08-20 14:30 |
 | dataAtualizacao | data/hora | sim | 2025-08-20 15:10 |
@@ -141,20 +146,167 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 | Campo | Tipo | Obrigatório | Exemplo |
 |-----------------|--------------------|-------------|-------------------------|
 | id | número | sim | 5 |
-| receita_id | número (fk) | sim | 3 |
 | cliente_id | número (fk) | sim | 2 |
 | usuario_id | número (fk) | sim | 1 |
 | preco_total | número | sim | 4,99 |
-| prioridade | char | 'b','m','a' | 'a' |
+| prioridade | enum | sim | 'Alta' |
 | margem_lucro | número | sim | (10%) 0.1 |
-| estado | char | sim | 'a','f' | 'a' |
+| estado | enum | sim | 'Aberto' |
 | dataCriacao | data/hora | sim | 2025-08-20 13:10 |
 | dataAtualizacao | data/hora | sim | 2025-08-24 17:10
 | dataLimite | data/hora | sim | 2025-08-25 18:15
 
+### Pedidos_Receitas
+| Campo | Tipo | Obrigatório | Exemplo |
+|-----------------|--------------------|-------------|-------------------------|
+| id | número | sim | 3 |
+| pedido_id | número (fk) | sim | 2 |
+| receita_id | número (fk) | sim | 2 |
+| quantidade | número | sim | 45 |
+| preco_unitario | número | sim | 4,99 |
+
+
 ### 9.3 Relações entre entidades
-- Receitas ↔ Ingredientes (N↔N) → tabela Receita_Ingrediente
+- Receitas ↔ Ingredientes (N↔N) → tabela Receitas_Ingredientes
 - Clientes → Pedidos (1→N)
-- Pedidos ↔ Receitas (N↔N) → tabela Pedido_Receita
+- Pedidos ↔ Receitas (N↔N) → tabela Pedidos_Receitas
+- Usuarios → Receitas (1→N)
+- Usuarios → Ingredientes (1→N)
+- Usuarios → Clientes (1→N)
+- Usuarios → Pedidos (1→N)
 
+### 9.4 Modelagem Postgres
+```sql
 
+--Enum para prioridades
+CREATE TYPE prioridade_enum AS ENUM ('Baixa', 'Media', 'Alta');
+
+--Enum para estados
+CREATE TYPE estado_enum AS ENUM ('Aberto', 'Pendente', 'Cancelado', 'Finalizado');
+
+--Enum para métricas
+CREATE TYPE metrica_enum AS ENUM ('Kg', 'g', 'L', 'ml', 'unidade', 'mg');
+
+--Comandos DDL:
+
+--Criação da tabela usuários
+CREATE TABLE usuarios (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    senha_hash VARCHAR(255) NOT NULL,
+    perfil SMALLINT NOT NULL CHECK (papel IN (0,1)), -- Usuario,Admin
+    data_criacao TIMESTAMP NOT NULL,
+    data_atualizacao TIMESTAMP NOT NULL
+);
+
+--Criação da tabela ingredientes
+CREATE TABLE ingredientes (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    preco DECIMAL(10,2) NOT NULL,
+    metrica metrica_enum NOT NULL,
+    usuario_id INT NOT NULL REFERENCES usuarios(id),
+    data_criacao TIMESTAMP NOT NULL,
+    data_atualizacao TIMESTAMP NOT NULL
+);
+
+--Criação da tabela receitas
+CREATE TABLE receitas (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    descricao VARCHAR(255),
+    usuario_id INT NOT NULL REFERENCES usuarios(id),
+    imagem_url VARCHAR(255),
+    preco NUMERIC(10,2) NOT NULL,
+    data_criacao TIMESTAMP NOT NULL,
+    data_atualizacao TIMESTAMP NOT NULL
+);
+
+--Criação da tabela auxiliar receitas_ingredientes
+CREATE TABLE receitas_ingredientes (
+    id SERIAL PRIMARY KEY,
+    receita_id INT NOT NULL REFERENCES receitas(id),
+    ingrediente_id INT NOT NULL REFERENCES ingredientes(id),
+    quantidade DECIMAL(10,2) NOT NULL
+);
+
+--Criação da tabela clientes
+CREATE TABLE clientes (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    telefone VARCHAR(20) NOT NULL,
+    endereco VARCHAR(255),
+    usuario_id INT NOT NULL REFERENCES usuarios(id),
+    data_criacao TIMESTAMP NOT NULL,
+    data_atualizacao TIMESTAMP NOT NULL
+);
+
+--Criação da tabela pedidos
+CREATE TABLE pedidos (
+    id SERIAL PRIMARY KEY,
+    cliente_id INT NOT NULL REFERENCES clientes(id),
+    usuario_id INT NOT NULL REFERENCES usuarios(id),
+    preco_total DECIMAL(10,2) NOT NULL,
+    prioridade prioridade_enum NOT NULL,
+    margem_lucro DECIMAL(5,2) NOT NULL,
+    estado estado_enum NOT NULL,
+    data_criacao TIMESTAMP NOT NULL,
+    data_atualizacao TIMESTAMP NOT NULL,
+    data_limite TIMESTAMP NOT NULL
+);
+
+--Criação da tabela pedidos_receitas
+CREATE TABLE pedidos_receitas (
+    id SERIAL PRIMARY KEY,
+    pedido_id INT NOT NULL REFERENCES pedidos(id),
+    receita_id INT NOT NULL REFERENCES receitas(id),
+    quantidade DECIMAL(10,2) NOT NULL,
+    preco_unitario DECIMAL(10,2) NOT NULL
+);
+
+--Comandos DML:
+
+--Inserção usuários
+INSERT INTO usuarios (nome, email, senha_hash, papel, data_criacao, data_atualizacao)
+VALUES
+('Ana Souza', 'ana@exemplo.com', '$2a$10$abcdef...', 0, NOW(), NOW()),
+('João Silva', 'joao@exemplo.com', '$2a$10$ghijkl...', 1, NOW(), NOW());
+
+--Inserção ingredientes
+INSERT INTO ingredientes (nome, preco, metrica, usuario_id, data_criacao, data_atualizacao)
+VALUES
+('Chocolate Granulado', 4.99, 'Kg', 1, NOW(), NOW()),
+('Leite Condensado', 7.50, 'L', 2, NOW(), NOW());
+
+--Inserção receitas
+INSERT INTO receitas (nome, descricao, usuario_id, imagem_url, preco, data_criacao, data_atualizacao)
+VALUES
+('Casadinho', '2 caixas de leite condensado e 200g de chocolate', 1, '/imagens/casadinho.png', 4.99, NOW(), NOW()),
+('Brigadeiro', 'Leite condensado, chocolate em pó e manteiga', 2, '/imagens/brigadeiro.png', 3.50, NOW(), NOW());
+
+--Inserção receitas_ingredientes
+INSERT INTO receitas_ingredientes (receita_id, ingrediente_id, quantidade)
+VALUES
+(1, 1, 200),
+(2, 2, 1.5);
+
+--Inserção clientes
+INSERT INTO clientes (nome, email, telefone, endereco, usuario_id, data_criacao, data_atualizacao)
+VALUES
+('Carlos Mendes', 'carlos@gmail.com', '(49) 9192-7122', 'Av. Papa João XXIII', 1, '2025-08-20 14:30', NOW(), NOW()),
+('Mariana Lima', 'mariana@gmail.com', '(49) 9181-3344', 'Rua Blumenau, 123', 2, '2025-08-20 14:35', NOW(), NOW());
+
+--Inserção pedidos
+INSERT INTO pedidos (cliente_id, usuario_id, preco_total, prioridade, margem_lucro, estado, data_criacao, data_atualizacao, data_limite)
+VALUES
+(1, 1, 4.99, 'Alta', 0.1, 'Aberto', '2025-08-20 13:10', NOW(), NOW()),
+(2, 2, 7.50, 'Media', 0.15, 'Aberto', '2025-08-21 10:00', NOW(), NOW());
+
+--Inserção pedidos_receitas
+INSERT INTO pedidos_receitas (pedido_id, receita_id, quantidade, preco_unitario)
+VALUES
+(1, 1, 10, 4.99),
+(2, 2, 20, 3.50);
+```
