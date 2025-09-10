@@ -55,7 +55,8 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 
 ## 💻 Esboços de algumas telas (wireframes)
 ![Wireframe - Login](wireframes/WF_Login.png)
-![Wireframe - Login](wireframes/WF_Cadastro.png)
+![Wireframe - Cadastro](wireframes/WF_Cadastro.png)
+![Wireframe - Ingredientes](wireframes/WF_Ingredientes.png)
 
 ## ⚙️ Tecnologias
 
