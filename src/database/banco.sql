@@ -165,38 +165,4 @@ VALUES
 (3, 3, 2, 3.80),  
 (4, 5, 1, 5.50);  
 
---Comandos DQL:
-
---Listando receita e usuário que cadastrou
-SELECT r.id, r.nome AS receita, r.descricao, r.preco, u.nome AS usuario
-FROM receitas r
-JOIN usuarios u ON r.usuario_id = u.id;
-
---Total gasto por cliente
-SELECT c.nome AS cliente, SUM(p.preco_total) AS total_gasto
-FROM pedidos p
-JOIN clientes c ON p.cliente_id = c.id
-GROUP BY c.nome;
-
---Listar por prioridade
-SELECT p.id, c.nome AS cliente, u.nome AS usuario, p.preco_total, p.prioridade, p.estado
-FROM pedidos p
-JOIN clientes c ON p.cliente_id = c.id
-JOIN usuarios u ON p.usuario_id = u.id
-WHERE p.prioridade = 'Alta' AND p.estado = 'Aberto';
-
---Listar por ingrediente específico
-SELECT r.nome AS receita, r.descricao
-FROM receitas r
-JOIN receitas_ingredientes ri ON r.id = ri.receita_id
-JOIN ingredientes i ON ri.ingrediente_id = i.id
-WHERE i.nome = 'Leite Condensado';
-
---Usuários que cadastraram mais de uma receita
-SELECT u.nome, COUNT(r.id) AS total_receitas
-FROM usuarios u
-JOIN receitas r ON u.id = r.usuario_id
-GROUP BY u.nome
-HAVING COUNT(r.id) > 1;
-
 \echo '--- Finalizando Reset banco sweetiefy_api_db ---'
