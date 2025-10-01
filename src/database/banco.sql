@@ -1,16 +1,16 @@
-\echo '--- Resetando banco sweetiefy_api_db ---'
+--\echo '--- Resetando banco sweetiefy_api_db ---'
 
-\encoding UTF8 
+--\encoding UTF8 
 
 SET client_encoding = 'UTF8'; 
 
-\set ON_ERROR_STOP on
+--\set ON_ERROR_STOP on
 
-DROP DATABASE IF EXISTS sweetiefy_api_db;
+-- DROP DATABASE IF EXISTS sweetiefy_api_db;
 
-CREATE DATABASE sweetiefy_api_db;
+-- CREATE DATABASE sweetiefy_api_db;
 
-\connect sweetiefy_api_db
+--\connect sweetiefy_api_db
 
 --Enum para prioridades
 CREATE TYPE prioridade_enum AS ENUM ('Baixa', 'Media', 'Alta');
@@ -30,8 +30,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
     email VARCHAR(150) NOT NULL UNIQUE,
     senha_hash VARCHAR(255) NOT NULL,
     perfil SMALLINT NOT NULL CHECK (perfil IN (0,1)), -- Usuario, Admin
-    data_criacao TIMESTAMP NOT NULL,
-    data_atualizacao TIMESTAMP NOT NULL
+    data_criacao TIMESTAMP NOT NULL DEFAULT now(),
+    data_atualizacao TIMESTAMP NOT NULL DEFAULT now()
 );
 
 --Criação da tabela ingredientes
@@ -41,8 +41,8 @@ CREATE TABLE IF NOT EXISTS ingredientes (
     preco DECIMAL(10,2) NOT NULL,
     metrica metrica_enum NOT NULL,
     usuario_id INT NOT NULL REFERENCES usuarios(id),
-    data_criacao TIMESTAMP NOT NULL,
-    data_atualizacao TIMESTAMP NOT NULL
+    data_criacao TIMESTAMP NOT NULL DEFAULT now(),
+    data_atualizacao TIMESTAMP NOT NULL DEFAULT now()
 );
 
 --Criação da tabela receitas
@@ -53,8 +53,8 @@ CREATE TABLE IF NOT EXISTS receitas (
     usuario_id INT NOT NULL REFERENCES usuarios(id),
     imagem_url VARCHAR(255),
     preco NUMERIC(10,2) NOT NULL,
-    data_criacao TIMESTAMP NOT NULL,
-    data_atualizacao TIMESTAMP NOT NULL
+    data_criacao TIMESTAMP NOT NULL DEFAULT now(),
+    data_atualizacao TIMESTAMP NOT NULL DEFAULT now()
 );
 
 --Criação da tabela auxiliar receitas_ingredientes
@@ -73,8 +73,8 @@ CREATE TABLE IF NOT EXISTS clientes (
     telefone VARCHAR(20) NOT NULL,
     endereco VARCHAR(255),
     usuario_id INT NOT NULL REFERENCES usuarios(id),
-    data_criacao TIMESTAMP NOT NULL,
-    data_atualizacao TIMESTAMP NOT NULL
+    data_criacao TIMESTAMP NOT NULL DEFAULT now(),
+    data_atualizacao TIMESTAMP NOT NULL DEFAULT now()
 );
 
 --Criação da tabela pedidos
@@ -86,8 +86,8 @@ CREATE TABLE IF NOT EXISTS pedidos (
     prioridade prioridade_enum NOT NULL,
     margem_lucro DECIMAL(5,2) NOT NULL,
     estado estado_enum NOT NULL,
-    data_criacao TIMESTAMP NOT NULL,
-    data_atualizacao TIMESTAMP NOT NULL,
+    data_criacao TIMESTAMP NOT NULL DEFAULT now(),
+    data_atualizacao TIMESTAMP NOT NULL DEFAULT now(),
     data_limite TIMESTAMP NOT NULL
 );
 
@@ -165,4 +165,4 @@ VALUES
 (3, 3, 2, 3.80),  
 (4, 5, 1, 5.50);  
 
-\echo '--- Finalizando Reset banco sweetiefy_api_db ---'
+--\echo '--- Finalizando Reset banco sweetiefy_api_db ---'
