@@ -178,6 +178,9 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 - Usuarios → Pedidos (1→N)
 
 ### 9.4 Modelagem Postgres
+<details>
+     <summary>Comandos DDL</summary>
+
 ```sql
 --Enum para prioridades
 CREATE TYPE prioridade_enum AS ENUM ('Baixa', 'Media', 'Alta');
@@ -187,8 +190,6 @@ CREATE TYPE estado_enum AS ENUM ('Aberto', 'Pendente', 'Cancelado', 'Finalizado'
 
 --Enum para métricas
 CREATE TYPE metrica_enum AS ENUM ('Kg', 'g', 'L', 'ml', 'unidade', 'mg');
-
---Comandos DDL:
 
 --Criação da tabela usuários
 CREATE TABLE usuarios (
@@ -266,8 +267,13 @@ CREATE TABLE pedidos_receitas (
     quantidade DECIMAL(10,2) NOT NULL,
     preco_unitario DECIMAL(10,2) NOT NULL
 );
+```
+</details>
 
---Comandos DML:
+<details>
+     <summary>Comandos DML</summary>
+    
+```sql
 
 --Inserção usuários
 INSERT INTO usuarios (nome, email, senha_hash, perfil, data_criacao, data_atualizacao)
@@ -311,8 +317,13 @@ VALUES
 (1, 1, 10, 4.99),
 (2, 2, 20, 3.50);
 
---Comandos DQL:
+```
+</details>
 
+<details>
+     <summary>Comandos DQL</summary>
+
+```sql
 --Listando receita e usuário que cadastrou
 SELECT r.id, r.nome AS receita, r.descricao, r.preco, u.nome AS usuario
 FROM receitas r
@@ -344,4 +355,57 @@ FROM usuarios u
 JOIN receitas r ON u.id = r.usuario_id
 GROUP BY u.nome
 HAVING COUNT(r.id) > 1;
+```
+</details>
+
+## 🛠️ Rodando Localmente
+### Pré-requisitos
+- [Node.Js Download](https://www.nodejs.tech/pt-br/download)
+- [PostgreSQL Download](https://www.postgresql.org/download/)
+
+### Modificação do arquivo `.env`
+```javascript
+# Porta da API
+PORT=3000
+
+# Postgres
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=senhabanco
+DB_DATABASE=sweetiefy_api_db
+```
+
+
+### Instalando dependências
+```npm
+npm install
+npm run dev 
+```
+
+### Testando com `curl`
+```bash
+📋 Listar todos os ingredientes
+curl http://localhost:3000/api/ingredientes
+
+🔍 Mostrar ingrediente por ID
+curl http://localhost:3000/api/ingredientes/1
+
+➕ Criar ingrediente
+curl -X POST http://localhost:3000/api/ingredientes \
+  -H "Content-Type: application/json" \
+  -d '{"Usuarios_id":1,"texto":"Farinha de trigo","estado":"a","urlImagem":"http://exemplo.com/farinha.png"}'
+
+✏️ Atualizar (PUT) - envia todos os campos
+curl -X PUT http://localhost:3000/api/ingredientes/1 \
+  -H "Content-Type: application/json" \
+  -d '{"Usuarios_id":1,"texto":"Farinha integral","estado":"f","urlImagem":null}'
+
+✏️ Atualizar parcialmente (PATCH) - só alguns campos
+curl -X PATCH http://localhost:3000/api/ingredientes/1 \
+  -H "Content-Type: application/json" \
+  -d '{"texto":"Farinha integral orgânica"}'
+
+❌ Deletar ingrediente
+curl -X DELETE http://localhost:3000/api/ingredientes/1
 ```
