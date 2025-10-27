@@ -1,214 +1,215 @@
 import { Router } from "express";
-import { pool } from "../database/db.js";
+import { pool } from "../database/db.js"; 
 
-const router = Router(); 
-
-const isEstadoValido = (s) => s === "a" || s === "f";
+const router = Router();
 
 router.get("/", async (_req, res) => {
-  try {
-    const { rows } = await pool.query(
-      "SELECT * FROM ingredientes ORDER BY id DESC"
-    );
-    res.json(rows);
-  } catch {
-    res.status(500).json({ erro: "erro interno" });
-  }
+    try {
+        const { rows } = await pool.query(
+            `SELECT id, nome, preco, metrica, usuario_id, data_criacao, data_atualizacao 
+             FROM ingredientes 
+             ORDER BY nome ASC`
+        );
+        res.json(rows);
+    } catch (e) {
+        console.error("Erro ao listar ingredientes:", e);
+        res.status(500).json({ erro: "Erro interno do servidor." });
+    }
 });
 
 router.get("/:id", async (req, res) => {
+    const id = Number(req.params.id);
 
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ erro: "id inválido" });
-  }
-  try {
-    const { rows } = await pool.query(
-      "SELECT * FROM ingredientes WHERE id = $1",
-      [id]
-    );
-    if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
-    res.json(rows[0]); 
-  } catch {
-    res.status(500).json({ erro: "erro interno" });
-  }
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ erro: "ID do ingrediente inválido" });
+    }
+
+    try {
+        const { rows } = await pool.query(
+            `SELECT id, nome, preco, metrica, usuario_id, data_criacao, data_atualizacao 
+             FROM ingredientes 
+             WHERE id = $1`,
+            [id]
+        );
+        
+        if (!rows[0]) {
+            return res.status(404).json({ erro: "Ingrediente não encontrado" });
+        }
+        
+        res.json(rows[0]);
+    } catch (e) {
+        console.error("Erro ao buscar ingrediente:", e);
+        res.status(500).json({ erro: "Erro interno do servidor." });
+    }
 });
 
 router.post("/", async (req, res) => {
+    const { nome, preco, metrica, usuario_id } = req.body ?? {};
 
-  const { Usuarios_id, texto, estado, urlImagem } = req.body ?? {};
+    const uid = Number(usuario_id);
+    const temUidValido = Number.isInteger(uid) && uid > 0;
+    const temNomeValido = typeof nome === "string" && nome.trim().length > 0;
+    const precoValido = typeof preco === 'number' && preco >= 0;
+    const temMetricaValida = typeof metrica === "string" && metrica.trim().length > 0; 
 
-  const uid = Number(Usuarios_id);
-  const temUidValido = Number.isInteger(uid) && uid > 0;
-  const temTextoValido = typeof texto === "string" && texto.trim() !== "";
-  const est = estado ?? "a";
-  const temEstadoValido = isEstadoValido(est);
-  
-  if (!temUidValido || !temTextoValido || !temEstadoValido) {
-    return res.status(400).json({
-      erro:
-        "Campos obrigatórios: Usuarios_id (inteiro>0), texto (string) e estado ('a' ou 'f' — se ausente, assume 'a')",
-    });
-  }
-  try {
-    const { rows } = await pool.query(
-      `INSERT INTO ingredientes (Usuarios_id, texto, estado, urlImagem)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
-      [uid, texto.trim(), est, urlImagem ?? null]
-    );
-
-    res.status(201).json(rows[0]);
-  } catch (e) {
-    if (e?.code === "23503") {
-      return res
-        .status(400)
-        .json({ erro: "Usuarios_id não existe (violação de chave estrangeira)" });
+    if (!temNomeValido || !precoValido || !temMetricaValida || !temUidValido) {
+        return res.status(400).json({
+            erro: "Campos obrigatórios: nome (string), preco (numero), metrica (string) e usuario_id (inteiro>0)",
+        });
     }
-    res.status(500).json({ erro: "erro interno" });
-  }
+
+    try {
+        const { rows } = await pool.query(
+            `INSERT INTO ingredientes (nome, preco, metrica, usuario_id)
+             VALUES ($1, $2, $3, $4)
+             RETURNING id, nome, preco, metrica, usuario_id, data_criacao, data_atualizacao`,
+            [nome.trim(), preco, metrica.trim(), uid]
+        );
+        res.status(201).json(rows[0]);
+    } catch (e) {
+        console.error("Erro ao criar ingrediente:", e);
+        res.status(500).json({ erro: "Erro ao criar ingrediente. Verifique se o usuário existe e a métrica é válida." });
+    }
 });
 
 router.put("/:id", async (req, res) => {
-  const id = Number(req.params.id);
-  const { Usuarios_id, texto, estado, urlImagem } = req.body ?? {};
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ erro: "id inválido" });
-  }
-  const uid = Number(Usuarios_id);
-  const temUidValido = Number.isInteger(uid) && uid > 0;
-  const temTextoValido = typeof texto === "string" && texto.trim() !== "";
-  const temEstadoValido = isEstadoValido(estado);
-  if (!temUidValido || !temTextoValido || !temEstadoValido) {
-    return res.status(400).json({
-      erro:
-        "Para PUT, envie todos os campos: Usuarios_id (inteiro>0), texto (string), estado ('a' | 'f') e urlImagem (opcional)",
-    });
-  }
-  try {
-    const { rows } = await pool.query(
-      `UPDATE ingredientes
-         SET Usuarios_id = $1,
-             texto       = $2,
-             estado      = $3,
-             urlImagem   = $4,
-             data_atualizacao = now()
-       WHERE id = $5
-       RETURNING *`,
-      [uid, texto.trim(), estado, urlImagem ?? null, id]
-    );
-    if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
-    res.json(rows[0]); 
-  } catch (e) {
-    if (e?.code === "23503") {
-      return res
-        .status(400)
-        .json({ erro: "Usuarios_id não existe (violação de chave estrangeira)" });
+    const id = Number(req.params.id);
+    const { nome, preco, metrica, usuario_id } = req.body ?? {};
+
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ erro: "ID do ingrediente inválido" });
     }
-    res.status(500).json({ erro: "erro interno" });
-  }
+
+    const uid = Number(usuario_id);
+    const temUidValido = Number.isInteger(uid) && uid > 0;
+    const temNomeValido = typeof nome === "string" && nome.trim().length > 0;
+    const precoValido = typeof preco === 'number' && preco >= 0;
+    const temMetricaValida = typeof metrica === "string" && metrica.trim().length > 0;
+
+    if (!temNomeValido || !precoValido || !temMetricaValida || !temUidValido) {
+        return res.status(400).json({
+            erro: "Para PUT, envie todos os campos: nome (string), preco (numero), metrica (string) e usuario_id (inteiro>0)",
+        });
+    }
+
+    try {
+        const { rows } = await pool.query(
+            `UPDATE ingredientes
+                 SET nome = $1,
+                     preco = $2,
+                     metrica = $3,
+                     usuario_id = $4,
+                     data_atualizacao = now()
+             WHERE id = $5
+             RETURNING id, nome, preco, metrica, usuario_id, data_atualizacao`,
+            [nome.trim(), preco, metrica.trim(), uid, id]
+        );
+        
+        if (!rows[0]) {
+            return res.status(404).json({ erro: "Ingrediente não encontrado" });
+        }
+        
+        res.json(rows[0]);
+    } catch (e) {
+        console.error("Erro ao atualizar ingrediente (PUT):", e);
+        res.status(500).json({ erro: "Erro interno do servidor." });
+    }
 });
 
 router.patch("/:id", async (req, res) => {
-  const id = Number(req.params.id);
-  const { Usuarios_id, texto, estado, urlImagem } = req.body ?? {};
+    const id = Number(req.params.id);
+    const { nome, preco, metrica, usuario_id } = req.body ?? {};
 
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ erro: "id inválido" });
-  }
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ erro: "ID do ingrediente inválido" });
+    }
 
-  if (
-    Usuarios_id === undefined &&
-    texto === undefined &&
-    estado === undefined &&
-    urlImagem === undefined
-  ) {
-    return res.status(400).json({ erro: "envie ao menos um campo para atualizar" });
-  }
+    if (nome === undefined && preco === undefined && metrica === undefined && usuario_id === undefined) {
+        return res.status(400).json({ erro: "Envie ao menos um campo para atualizar" });
+    }
 
-  let uid = null;
-  if (Usuarios_id !== undefined) {
-    uid = Number(Usuarios_id);
-    if (!Number.isInteger(uid) || uid <= 0) {
-      return res.status(400).json({ erro: "Usuarios_id deve ser inteiro > 0" });
-    }
-  }
-  let novoTexto = null;
-  if (texto !== undefined) {
-    if (typeof texto !== "string" || texto.trim() === "") {
-      return res.status(400).json({ erro: "texto deve ser string não vazia" });
-    }
-    novoTexto = texto.trim();
-  }
-  let novoEstado = null;
-  if (estado !== undefined) {
-    if (!isEstadoValido(estado)) {
-      return res.status(400).json({ erro: "estado deve ser 'a' ou 'f'" });
-    }
-    novoEstado = estado;
-  }
+    const updates = [];
+    const values = [id]; 
+    let paramIndex = 2; 
 
-  const novaUrl = urlImagem === undefined ? null : urlImagem;
-  try {
-    const { rows } = await pool.query(
-      `UPDATE ingredientes
-         SET Usuarios_id      = COALESCE($1, Usuarios_id),
-             texto            = COALESCE($2, texto),
-             estado           = COALESCE($3, estado),
-             urlImagem        = COALESCE($4, urlImagem),
-             data_atualizacao = now()
-       WHERE id = $5
-       RETURNING *`,
-      [uid, novoTexto, novoEstado, novaUrl, id]
-    );
-    if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
-    res.json(rows[0]); 
-  } catch (e) {
-    if (e?.code === "23503") {
-      return res
-        .status(400)
-        .json({ erro: "Usuarios_id não existe (violação de chave estrangeira)" });
+    if (nome !== undefined) {
+        if (typeof nome !== "string" || nome.trim() === "") {
+            return res.status(400).json({ erro: "nome deve ser string não vazia" });
+        }
+        updates.push(`nome = $${paramIndex++}`);
+        values.push(nome.trim());
     }
-    res.status(500).json({ erro: "erro interno" });
-  }
+
+    if (preco !== undefined) {
+        const p = Number(preco);
+        if (typeof preco !== 'number' || p < 0) {
+            return res.status(400).json({ erro: "preco deve ser um número não negativo" });
+        }
+        updates.push(`preco = $${paramIndex++}`);
+        values.push(p);
+    }
+
+    if (metrica !== undefined) {
+        if (typeof metrica !== "string" || metrica.trim() === "") {
+            return res.status(400).json({ erro: "metrica deve ser string não vazia" });
+        }
+        updates.push(`metrica = $${paramIndex++}`);
+        values.push(metrica.trim());
+    }
+
+    if (usuario_id !== undefined) {
+        const uid = Number(usuario_id);
+        if (!Number.isInteger(uid) || uid <= 0) {
+            return res.status(400).json({ erro: "usuario_id deve ser inteiro > 0" });
+        }
+        updates.push(`usuario_id = $${paramIndex++}`);
+        values.push(uid);
+    }
+
+    updates.push(`data_atualizacao = now()`);
+
+    try {
+        const query = `
+            UPDATE ingredientes
+            SET ${updates.join(', ')}
+            WHERE id = $1
+            RETURNING id, nome, preco, metrica, usuario_id, data_atualizacao`;
+            
+        const { rows } = await pool.query(query, values);
+        
+        if (!rows[0]) {
+            return res.status(404).json({ erro: "Ingrediente não encontrado" });
+        }
+        
+        res.json(rows[0]);
+    } catch (e) {
+        console.error("Erro ao atualizar ingrediente (PATCH):", e);
+        res.status(500).json({ erro: "Erro interno do servidor." });
+    }
 });
 
 router.delete("/:id", async (req, res) => {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ erro: "id inválido" });
-  }
-  try {
-    const r = await pool.query(
-      "DELETE FROM ingredientes WHERE id = $1 RETURNING id",
-      [id]
-    );
-    if (!r.rowCount) return res.status(404).json({ erro: "não encontrado" });
-    res.status(204).end(); 
-  } catch {
-    res.status(500).json({ erro: "erro interno" });
-  }
-});
+    const id = Number(req.params.id);
 
-router.patch("/:id/fechar", async (req, res) => {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ erro: "id inválido" });
-  }
-  try {
-    const { rows } = await pool.query(
-      `UPDATE ingredientes
-         SET estado = 'f',
-             data_atualizacao = now()
-       WHERE id = $1
-       RETURNING *`,
-      [id]
-    );
-    if (!rows[0]) return res.status(404).json({ erro: "não encontrado" });
-    res.json(rows[0]);
-  } catch {
-    res.status(500).json({ erro: "erro interno" });
-  }
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ erro: "ID do ingrediente inválido" });
+    }
+
+    try {
+        const r = await pool.query(
+            `DELETE FROM ingredientes WHERE id = $1 RETURNING id`,
+            [id]
+        );
+        
+        if (!r.rowCount) {
+            return res.status(404).json({ erro: "Ingrediente não encontrado" });
+        }
+        
+        res.status(204).end(); 
+    } catch (e) {
+        console.error("Erro ao deletar ingrediente:", e);
+        res.status(500).json({ erro: "Erro interno do servidor." });
+    }
 });
 
 export default router;
