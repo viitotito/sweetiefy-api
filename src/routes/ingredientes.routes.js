@@ -207,4 +207,5 @@ router.patch("/:id/fechar", async (req, res) => {
     res.status(500).json({ erro: "erro interno" });
   }
 });
+
 export default router;

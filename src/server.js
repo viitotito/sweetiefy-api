@@ -1,11 +1,13 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 import ingredientesRouter from "./routes/ingredientes.routes.js";
 dotenv.config();
 
 const app = express();
 
 app.use(express.json());
+app.use(cors());
 
 app.get("/", (_req, res) => {
   res.json({
@@ -21,4 +23,7 @@ app.get("/", (_req, res) => {
 app.use("/api/ingredientes", ingredientesRouter);
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Servidor rodando em: http://localhost:${PORT}`);
+  console.log('Cors configurado para estado permissivo');
+});
