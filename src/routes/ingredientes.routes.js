@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { pool } from "../database/db.js";
+
 const router = Router(); 
+
 const isEstadoValido = (s) => s === "a" || s === "f";
 
 router.get("/", async (_req, res) => {
@@ -41,6 +43,7 @@ router.post("/", async (req, res) => {
   const temTextoValido = typeof texto === "string" && texto.trim() !== "";
   const est = estado ?? "a";
   const temEstadoValido = isEstadoValido(est);
+  
   if (!temUidValido || !temTextoValido || !temEstadoValido) {
     return res.status(400).json({
       erro:
