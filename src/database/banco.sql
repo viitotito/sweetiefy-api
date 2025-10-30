@@ -117,13 +117,13 @@ VALUES
 ('Aline Santos', 'aline.santos@gmail.com', '(49) 9177-3344', 'Rua das Hortênsias, 12', 2, NOW(), NOW()),
 ('Rafael Torres', 'rafael.torres@gmail.com', '(49) 9133-5566', 'Av. Brasil, 999', 1, NOW(), NOW());
 
-INSERT INTO pedidos (cliente_id, usuario_id, preco_total, prioridade, margem_lucro, estado, data_criacao, data_atualizacao, data_limite)
+INSERT INTO pedidos (descricao, cliente_id, usuario_id, preco_total, prioridade, margem_lucro, estado, data_criacao, data_atualizacao, data_limite)
 VALUES
-(1, 1, 4.99, 'Alta', 0.1, 'Aberto', NOW(), NOW(),NOW()),
-(2, 2, 7.50, 'Media', 0.15, 'Aberto', NOW(), NOW(),NOW()),
-(5, 1, 7.60, 'Media', 0.18, 'Aberto', NOW(), NOW(), NOW()),
-(3, 2, 10.50, 'Alta', 0.22, 'Aberto', NOW(), NOW(), NOW()),
-(4, 1, 8.25, 'Baixa', 0.15, 'Aberto', NOW(), NOW(), NOW());
+('Doce da dona Ana',1, 1, 4.99, 'Alta', 0.1, 'Aberto', NOW(), NOW(),NOW()),
+(NULL,2, 2, 7.50, 'Media', 0.15, 'Aberto', NOW(), NOW(),NOW()),
+('Bolo para confraternização',5, 1, 7.60, 'Media', 0.18, 'Aberto', NOW(), NOW(), NOW()),
+('Maçã do amor para a festa junina',3, 2, 10.50, 'Alta', 0.22, 'Aberto', NOW(), NOW(), NOW()),
+(NULL,4, 1, 8.25, 'Baixa', 0.15, 'Aberto', NOW(), NOW(), NOW());
 
 INSERT INTO pedidos_receitas (pedido_id, receita_id, quantidade, preco_unitario)
 VALUES
