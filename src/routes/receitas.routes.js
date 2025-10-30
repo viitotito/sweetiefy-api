@@ -215,7 +215,7 @@ router.patch("/:id", async (req, res) => {
   } catch (e) {
     console.error("Erro ao atualizar receita (PATCH):", e);
     res.status(500).json({
-      erro: "Erro interno do servidor. Não foi possível atualizar receita parcialmente.",
+      erro: "Erro interno do servidor. Não foi possível atualizar parcialmente a receita.",
     });
   }
 });

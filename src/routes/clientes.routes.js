@@ -235,7 +235,7 @@ router.patch("/:id", async (req, res) => {
   } catch (e) {
     console.error("Erro ao atualizar cliente (PATCH):", e);
     res.status(500).json({
-      erro: "Erro interno do servidor. Não foi possível atualizar cliente parcialmente.",
+      erro: "Erro interno do servidor. Não foi possível atualizar parcialmente o cliente.",
     });
   }
 });

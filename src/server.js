@@ -1,15 +1,29 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import usuariosRouter from "./routes/usuarios.routes.js";
 import ingredientesRouter from "./routes/ingredientes.routes.js";
 import receitasRouter from "./routes/receitas.routes.js";
 import clientesRouter from "./routes/clientes.routes.js";
+
 dotenv.config();
 
 const app = express();
 
 app.use(express.json());
 app.use(cors());
+
+const usuariosRoute = {
+  LISTAR_USUARIOS: "GET /api/usuarios",
+  MOSTRAR_USUARIOS: "GET /api/usuarios/:id",
+  CRIAR_USUARIOS:
+    "POST /api/usuarios  BODY: { nome: 'string', email: 'string', senha: 'string', perfil: number(0,1) }",
+  SUBSTITUIR_USUARIOS:
+    "PUT /api/usuarios/:id  BODY: { nome: 'string', email: 'string', senha: 'string', perfil: number(0,1) }",
+  ATUALIZAR_USUARIOS:
+    "PATCH /api/usuarios/:id  BODY: { nome: 'string', email: 'string', senha: 'string', perfil: number(0,1) }",
+  DELETAR_USUARIOS: "DELETE /api/usuarios/:id",
+};
 
 const ingredientesRoute = {
   LISTAR_INGREDIENTES: "GET /api/ingredientes",
@@ -49,12 +63,14 @@ const clientesRoute = {
 
 app.get("/", (_req, res) => {
   res.json({
+    USUARIOS: usuariosRoute,
     INGREDIENTE: ingredientesRoute,
     RECEITAS: receitasRoute,
-    CLIENTES: clientesRoute
+    CLIENTES: clientesRoute,
   });
 });
 
+app.use("/api/usuarios", usuariosRouter);
 app.use("/api/ingredientes", ingredientesRouter);
 app.use("/api/receitas", receitasRouter);
 app.use("/api/clientes", clientesRouter);

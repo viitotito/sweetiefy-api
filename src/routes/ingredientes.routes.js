@@ -209,7 +209,7 @@ router.patch("/:id", async (req, res) => {
     res.json(rows[0]);
   } catch (e) {
     console.error("Erro ao atualizar ingrediente (PATCH):", e);
-    res.status(500).json({ erro: "Erro interno do servidor." });
+    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível atualizar parcialmente o ingrediente." });
   }
 });
 
