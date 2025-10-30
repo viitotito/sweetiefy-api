@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import ingredientesRouter from "./routes/ingredientes.routes.js";
 import receitasRouter from "./routes/receitas.routes.js";
+import clientesRouter from "./routes/clientes.routes.js";
 dotenv.config();
 
 const app = express();
@@ -28,16 +29,16 @@ app.get("/", (_req, res) => {
 
     LISTAR_CLIENTES: "GET /api/clientes",
     MOSTRAR_CLIENTES: "GET /api/clientes/:id",
-    CRIAR_CLIENTES: "POST /api/clientes  BODY: { Usuarios_id: number, texto: 'string', estado?: 'a'|'f', urlImagem?: 'string' }",
-    SUBSTITUIR_CLIENTES: "PUT /api/clientes/:id  BODY: { Usuarios_id: number, texto: 'string', estado: 'a'|'f', urlImagem?: 'string' }",
-    ATUALIZAR_CLIENTES: "PATCH /api/clientes/:id  BODY: { Usuarios_id?: number, texto?: 'string', estado?: 'a'|'f', urlImagem?: 'string' }",
+    CRIAR_CLIENTES: "POST /api/clientes  BODY: { nome: 'string', email: 'string', telefone: 'string', endereco?: 'string', usuario_id: number }",
+    SUBSTITUIR_CLIENTES: "PUT /api/clientes/:id  BODY: { nome: 'string', email: 'string', telefone: 'string', endereco?: 'string', usuario_id: number }",
+    ATUALIZAR_CLIENTES: "PATCH /api/clientes/:id  BODY: { nome: 'string', email: 'string', telefone: 'string', endereco?: 'string', usuario_id: number }",
     DELETAR_CLIENTES: "DELETE /api/clientes/:id",
-  });
+  })
 });
 
 app.use("/api/ingredientes", ingredientesRouter);
 app.use("/api/receitas", receitasRouter);
-
+app.use("/api/clientes", clientesRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
