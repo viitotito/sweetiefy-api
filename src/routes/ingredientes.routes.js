@@ -13,7 +13,9 @@ router.get("/", async (_req, res) => {
     res.json(rows);
   } catch (e) {
     console.error("Erro ao listar ingredientes (GET):", e);
-    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível listar ingredientes." });
+    res.status(500).json({
+      erro: "Erro interno do servidor. Não foi possível listar ingredientes.",
+    });
   }
 });
 
@@ -39,7 +41,9 @@ router.get("/:id", async (req, res) => {
     res.json(rows[0]);
   } catch (e) {
     console.error("Erro ao buscar ingrediente (GET:id):", e);
-    res.status(500).json({ erro: "Erro interno do servidor." });
+    res.status(500).json({
+      erro: "Erro interno do servidor. Não foi possível buscar ingrediente.",
+    });
   }
 });
 
@@ -50,11 +54,12 @@ router.post("/", async (req, res) => {
   const temUidValido = Number.isInteger(uid) && uid > 0;
   const temNomeValido = typeof nome === "string" && nome.trim().length > 0;
   const temPrecoValido = typeof preco === "number" && preco >= 0;
-  const temMetricaValida = typeof metrica === "string" && metrica.trim().length > 0;
+  const temMetricaValida =
+    typeof metrica === "string" && metrica.trim().length > 0;
 
   if (!temNomeValido || !temPrecoValido || !temMetricaValida || !temUidValido) {
     return res.status(400).json({
-      erro: "Campos obrigatórios: nome (string), preco (numero), metrica (string) e usuario_id (inteiro > 0).",
+      erro: "Campos obrigatórios: nome (string), preco (number), metrica (string) e usuario_id (number > 0).",
     });
   }
 
@@ -68,11 +73,9 @@ router.post("/", async (req, res) => {
     res.status(201).json(rows[0]);
   } catch (e) {
     console.error("Erro ao criar ingrediente (POST):", e);
-    res
-      .status(500)
-      .json({
-        erro: "Erro ao criar ingrediente. Verifique se o usuário existe e a métrica é válida.",
-      });
+    res.status(500).json({
+      erro: "Erro ao criar ingrediente. Verifique se o usuário existe e os campos são válidos.",
+    });
   }
 });
 
@@ -81,7 +84,7 @@ router.put("/:id", async (req, res) => {
   const { nome, preco, metrica, usuario_id } = req.body ?? {};
 
   if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ erro: "ID do ingrediente inválido" });
+    return res.status(400).json({ erro: "ID do ingrediente inválido." });
   }
 
   const uid = Number(usuario_id);
@@ -93,7 +96,7 @@ router.put("/:id", async (req, res) => {
 
   if (!temNomeValido || !temPrecoValido || !temMetricaValida || !temUidValido) {
     return res.status(400).json({
-      erro: "Campos obrigatórios: nome (string), preco (numero), metrica (string) e usuario_id (inteiro > 0)",
+      erro: "Campos obrigatórios: nome (string), preco (number), metrica (string) e usuario_id (number > 0)",
     });
   }
 
@@ -117,7 +120,9 @@ router.put("/:id", async (req, res) => {
     res.json(rows[0]);
   } catch (e) {
     console.error("Erro ao atualizar ingrediente (PUT):", e);
-    res.status(500).json({ erro: "Erro interno do servidor." });
+    res.status(500).json({
+      erro: "Erro interno do servidor. Não foi possível atualizar ingrediente.",
+    });
   }
 });
 
@@ -146,7 +151,9 @@ router.patch("/:id", async (req, res) => {
 
   if (nome !== undefined) {
     if (typeof nome !== "string" || nome.trim() === "") {
-      return res.status(400).json({ erro: "nome deve ser string não vazia." });
+      return res
+        .status(400)
+        .json({ erro: "Campo 'nome' deve ser string não vazia." });
     }
     updates.push(`nome = $${paramIndex++}`);
     values.push(nome.trim());
@@ -157,7 +164,7 @@ router.patch("/:id", async (req, res) => {
     if (typeof preco !== "number" || p < 0) {
       return res
         .status(400)
-        .json({ erro: "preco deve ser um número não negativo." });
+        .json({ erro: "Campo 'preco' deve ser um número não negativo." });
     }
     updates.push(`preco = $${paramIndex++}`);
     values.push(p);
@@ -165,9 +172,9 @@ router.patch("/:id", async (req, res) => {
 
   if (metrica !== undefined) {
     if (typeof metrica !== "string" || metrica.trim() === "") {
-      return res
-        .status(400)
-        .json({ erro: "metrica deve ser string não vazia." });
+      return res.status(400).json({
+        erro: "Campo 'metrica' deve ser string não vazia e ser válida.",
+      });
     }
     updates.push(`metrica = $${paramIndex++}`);
     values.push(metrica.trim());
@@ -176,7 +183,9 @@ router.patch("/:id", async (req, res) => {
   if (usuario_id !== undefined) {
     const uid = Number(usuario_id);
     if (!Number.isInteger(uid) || uid <= 0) {
-      return res.status(400).json({ erro: "usuario_id deve ser inteiro > 0." });
+      return res
+        .status(400)
+        .json({ erro: "Campo 'usuario_id' deve ser inteiro > 0." });
     }
     updates.push(`usuario_id = $${paramIndex++}`);
     values.push(uid);
@@ -224,7 +233,9 @@ router.delete("/:id", async (req, res) => {
     res.status(204).end();
   } catch (e) {
     console.error("Erro ao deletar ingrediente (DELETE):", e);
-    res.status(500).json({ erro: "Erro interno do servidor." });
+    res.status(500).json({
+      erro: "Erro interno do servidor. Não foi possível deletar ingrediente (verifique fk).",
+    });
   }
 });
 

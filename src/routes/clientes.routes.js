@@ -13,11 +13,9 @@ router.get("/", async (_req, res) => {
     res.json(rows);
   } catch (e) {
     console.error("Erro ao listar clientes (GET):", e);
-    res
-      .status(500)
-      .json({
-        erro: "Erro interno do servidor. Não foi possível listar clientes.",
-      });
+    res.status(500).json({
+      erro: "Erro interno do servidor. Não foi possível listar clientes.",
+    });
   }
 });
 
@@ -43,7 +41,9 @@ router.get("/:id", async (req, res) => {
     res.json(rows[0]);
   } catch (e) {
     console.error("Erro ao buscar cliente (GET:id):", e);
-    res.status(500).json({ erro: "Erro interno do servidor." });
+    res.status(500).json({
+      erro: "Erro interno do servidor. Não foi possível buscar cliente.",
+    });
   }
 });
 
@@ -67,7 +67,7 @@ router.post("/", async (req, res) => {
     !temUidValido
   ) {
     return res.status(400).json({
-      erro: "Campos obrigatórios: nome (string), email (string), telefone (string) e usuario_id (inteiro > 0).",
+      erro: "Campos obrigatórios: nome (string), email (string), telefone (string) e usuario_id (number > 0).",
     });
   }
 
@@ -81,11 +81,9 @@ router.post("/", async (req, res) => {
     res.status(201).json(rows[0]);
   } catch (e) {
     console.error("Erro ao criar cliente (POST):", e);
-    res
-      .status(500)
-      .json({
-        erro: "Erro ao criar cliente. Verifique se o usuário existe e os formatos de campo estão corretos.",
-      });
+    res.status(500).json({
+      erro: "Erro ao criar cliente. Verifique se o usuário existe e os campos são válidos.",
+    });
   }
 });
 
@@ -114,7 +112,7 @@ router.put("/:id", async (req, res) => {
     !temUidValido
   ) {
     return res.status(400).json({
-      erro: "Campos obrigatórios: nome (string), email (string), telefone (string) e usuario_id (inteiro > 0).",
+      erro: "Campos obrigatórios: nome (string), email (string), telefone (string) e usuario_id (number > 0).",
     });
   }
 
@@ -138,7 +136,9 @@ router.put("/:id", async (req, res) => {
     res.json(rows[0]);
   } catch (e) {
     console.error("Erro ao atualizar cliente (PUT):", e);
-    res.status(500).json({ erro: "Erro interno do servidor." });
+    res.status(500).json({
+      erro: "Erro interno do servidor. Não foi possível atualizar cliente.",
+    });
   }
 });
 
@@ -167,7 +167,9 @@ router.patch("/:id", async (req, res) => {
 
   if (nome !== undefined) {
     if (typeof nome !== "string" || nome.trim() === "") {
-      return res.status(400).json({ erro: "nome deve ser string não vazia." });
+      return res
+        .status(400)
+        .json({ erro: "Campo 'nome' deve ser string não vazia." });
     }
     updates.push(`nome = $${paramIndex++}`);
     values.push(nome.trim());
@@ -175,7 +177,9 @@ router.patch("/:id", async (req, res) => {
 
   if (email !== undefined) {
     if (typeof nome !== "string" || nome.trim() === "") {
-      return res.status(400).json({ erro: "email deve ser string não vazia." });
+      return res
+        .status(400)
+        .json({ erro: "Campo 'email' deve ser string não vazia." });
     }
     updates.push(`email = $${paramIndex++}`);
     values.push(nome.trim());
@@ -185,7 +189,7 @@ router.patch("/:id", async (req, res) => {
     if (typeof nome !== "string" || nome.trim() === "") {
       return res
         .status(400)
-        .json({ erro: "telefone deve ser string não vazia." });
+        .json({ erro: "Campo 'telefone' deve ser string não vazia." });
     }
     updates.push(`telefone = $${paramIndex++}`);
     values.push(nome.trim());
@@ -193,7 +197,9 @@ router.patch("/:id", async (req, res) => {
 
   if (endereco !== undefined) {
     if (typeof endereco !== "string") {
-      return res.status(400).json({ erro: "endereco deve ser string." });
+      return res
+        .status(400)
+        .json({ erro: "Campo 'endereco' deve ser string." });
     }
     updates.push(`endereco = $${paramIndex++}`);
     values.push(nome.trim());
@@ -202,7 +208,9 @@ router.patch("/:id", async (req, res) => {
   if (usuario_id !== undefined) {
     const uid = Number(usuario_id);
     if (!Number.isInteger(uid) || uid <= 0) {
-      return res.status(400).json({ erro: "usuario_id deve ser inteiro > 0." });
+      return res
+        .status(400)
+        .json({ erro: "Campo 'usuario_id' deve ser inteiro > 0." });
     }
     updates.push(`usuario_id = $${paramIndex++}`);
     values.push(uid);
@@ -226,7 +234,9 @@ router.patch("/:id", async (req, res) => {
     res.json(rows[0]);
   } catch (e) {
     console.error("Erro ao atualizar cliente (PATCH):", e);
-    res.status(500).json({ erro: "Erro interno do servidor." });
+    res.status(500).json({
+      erro: "Erro interno do servidor. Não foi possível atualizar cliente parcialmente.",
+    });
   }
 });
 
@@ -250,7 +260,9 @@ router.delete("/:id", async (req, res) => {
     res.status(204).end();
   } catch (e) {
     console.error("Erro ao deletar cliente (DELETE):", e);
-    res.status(500).json({ erro: "Erro interno do servidor." });
+    res.status(500).json({
+      erro: "Erro interno do servidor. Não foi possível deletar cliente (verifique fk).",
+    });
   }
 });
 
