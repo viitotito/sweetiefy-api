@@ -6,15 +6,15 @@ const router = Router();
 router.get("/", async (_req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, nome, descricao, usuario_id, imagem_url, preco, data_criacao, data_atualizacao 
-             FROM receitas 
-             ORDER BY nome ASC`
+      `SELECT id, descricao, cliente_id, usuario_id, preco_total, prioridade, margem_lucro, estado, data_limite, data_criacao, data_atualizacao
+             FROM pedidos 
+             ORDER BY id ASC`
     );
     res.json(rows);
   } catch (e) {
-    console.error("Erro ao listar receitas (GET):", e);
+    console.error("Erro ao listar pedidos (GET):", e);
     res.status(500).json({
-      erro: "Erro interno do servidor. Não foi possível listar receitas.",
+      erro: "Erro interno do servidor. Não foi possível listar pedidos.",
     });
   }
 });
@@ -23,83 +23,90 @@ router.get("/:id", async (req, res) => {
   const id = Number(req.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ erro: "ID da receita inválido." });
+    return res.status(400).json({ erro: "ID do pedido inválido." });
   }
 
   try {
     const { rows } = await pool.query(
-      `SELECT id, nome, descricao, usuario_id, imagem_url, preco, data_criacao, data_atualizacao
-             FROM receitas 
+      `SELECT id, descricao, cliente_id, usuario_id, preco_total, prioridade, margem_lucro, estado,  data_limite, data_criacao, data_atualizacao
+             FROM pedidos
              WHERE id = $1`,
       [id]
     );
 
     if (!rows[0]) {
-      return res.status(404).json({ erro: "Receita não encontrada." });
+      return res.status(404).json({ erro: "Pedido não encontrado." });
     }
 
-    const receita = rows[0];
+    const pedido = rows[0];
 
-    const ingredientesResult = await pool.query(
+    const receitasResult = await pool.query(
       `SELECT 
-                ri.quantidade, 
-                i.id AS ingrediente_id, 
-                i.nome, 
-                i.preco, 
-                i.metrica 
-             FROM receitas_ingredientes ri
-             JOIN ingredientes i ON ri.ingrediente_id = i.id
-             WHERE ri.receita_id = $1`,
+                pr.quantidade, 
+                pr.preco_unitario,
+                r.id AS receita_id, 
+                r.nome, 
+                r.descricao, 
+                r.imagem_url,
+                r.preco
+             FROM pedidos_receitas pr
+             JOIN receitas r ON pr.receita_id = r.id
+             WHERE pr.pedido_id = $1`,
       [id]
     );
 
-    receita.ingredientes = ingredientesResult.rows;
+    pedido.receitas = receitasResult.rows;
 
-    res.json(receita);
+    res.json(pedido);
   } catch (e) {
-    console.error("Erro ao buscar receita e ingredientes (GET:id):", e);
+    console.error("Erro ao buscar pedido e receitas (GET:id):", e);
     res.status(500).json({
-      erro: "Erro interno do servidor. Não foi possível buscar receita.",
+      erro: "Erro interno do servidor. Não foi possível buscar pedido.",
     });
   }
 });
 
 router.post("/", async (req, res) => {
-  const { nome, descricao, usuario_id, imagem_url, preco } = req.body ?? {};
+  const {descricao, cliente_id, usuario_id, preco_total, prioridade, margem_lucro, estado, data_limite} = req.body ?? {};
 
+  const cid = Number(cliente_id);
   const uid = Number(usuario_id);
+  const temCidValido = Number.isInteger(cid) && cid > 0;
   const temUidValido = Number.isInteger(uid) && uid > 0;
-  const temNomeValido = typeof nome === "string" && nome.trim().length > 0;
-  const temPrecoValido = typeof preco === "number" && preco >= 0;
+  const temPrecoTotalValido = typeof preco_total === "number" && preco_total >= 0;
+  const temPrioridadeValida = typeof prioridade === "string" && prioridade.trim().length > 0;
+  const temMargemLucroValido = typeof margem_lucro === "number" && margem_lucro >= 0;
+  const temEstadoValido = typeof estado === "string" && estado.trim().length > 0;
+  const temDataLimiteValida = typeof data_limite === "string" && estado.trim().length > 0;
 
-  if (!temUidValido || !temNomeValido || !temPrecoValido) {
+  if (!temCidValido || !temUidValido || !temPrecoTotalValido || !temPrioridadeValida || !temMargemLucroValido || !temEstadoValido || !temDataLimiteValida) {
     return res.status(400).json({
-      erro: "Campos obrigatórios: nome (string), preco (number) e usuario_id (number > 0).",
+      erro: "Campos obrigatórios: cliente_id (number > 0), usuario_id (number > 0), preco_total (number), prioridade (string), margem_lucro (number), estado (string) e data_limite (string).",  
     });
   }
 
   try {
     const { rows } = await pool.query(
-      `INSERT INTO receitas (nome, descricao, usuario_id, imagem_url, preco)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING id, nome, descricao, usuario_id, imagem_url, preco, data_criacao, data_atualizacao`,
-      [nome.trim(), descricao?.trim(), uid, imagem_url?.trim(), precoNum]
+      `INSERT INTO pedidos (descricao, cliente_id, usuario_id, preco_total, prioridade, margem_lucro, estado, data_limite, data_criacao, data_atualizacao)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             RETURNING id, descricao, cliente_id, usuario_id, preco_total, prioridade, margem_lucro, estado, data_limite, data_criacao, data_atualizacao`,
+      [descricao?.trim(), cid, uid, preco_total, prioridade.trim(), margem_lucro, estado.trim(), data_limite.trim()]
     );
     res.status(201).json(rows[0]);
   } catch (e) {
-    console.error("Erro ao criar receita (POST):", e);
+    console.error("Erro ao criar pedido (POST):", e);
     res.status(500).json({
-      erro: "Erro ao criar receita. Verifique se o usuário existe e os campos são válidos.",
+      erro: "Erro ao criar pedido. Verifique se o usuário existe e os campos são válidos.",
     });
   }
 });
 
 router.put("/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const { nome, descricao, usuario_id, imagem_url, preco } = req.body ?? {};
+  const {cliente_id, usuario_id, preco_total, prioridade, margem_lucro, estado, data_limite} = req.body ?? {};
 
   if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ erro: "ID da receita inválido." });
+    return res.status(400).json({ erro: "ID do pedido inválido." });
   }
 
   const uid = Number(usuario_id);

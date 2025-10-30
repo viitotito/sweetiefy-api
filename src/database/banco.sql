@@ -57,15 +57,16 @@ CREATE TABLE IF NOT EXISTS clientes (
 
 CREATE TABLE IF NOT EXISTS pedidos (
     id SERIAL PRIMARY KEY,
+    descricao VARCHAR(100),
     cliente_id INT NOT NULL REFERENCES clientes(id),
     usuario_id INT NOT NULL REFERENCES usuarios(id),
     preco_total DECIMAL(10,2) NOT NULL,
     prioridade prioridade_enum NOT NULL,
     margem_lucro DECIMAL(5,2) NOT NULL,
     estado estado_enum NOT NULL,
+    data_limite TIMESTAMP NOT NULL,
     data_criacao TIMESTAMP NOT NULL DEFAULT now(),
-    data_atualizacao TIMESTAMP NOT NULL DEFAULT now(),
-    data_limite TIMESTAMP NOT NULL
+    data_atualizacao TIMESTAMP NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS pedidos_receitas (
