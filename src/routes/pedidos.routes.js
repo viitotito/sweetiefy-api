@@ -87,7 +87,7 @@ router.post("/", async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      `INSERT INTO pedidos (descricao, cliente_id, usuario_id, preco_total, prioridade, margem_lucro, estado, data_limite, data_criacao, data_atualizacao)
+      `INSERT INTO pedidos (descricao, cliente_id, usuario_id, preco_total, prioridade, margem_lucro, estado, data_limite)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
              RETURNING id, descricao, cliente_id, usuario_id, preco_total, prioridade, margem_lucro, estado, data_limite, data_criacao, data_atualizacao`,
       [descricao?.trim(), cid, uid, preco_total, prioridade.trim(), margem_lucro, estado.trim(), data_limite.trim()]
