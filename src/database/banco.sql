@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS receitas_ingredientes (
     id SERIAL PRIMARY KEY,
     receita_id INT NOT NULL REFERENCES receitas(id),
     ingrediente_id INT NOT NULL REFERENCES ingredientes(id),
-    quantidade DECIMAL(10,2) NOT NULL
+    quantidade INT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS clientes (
@@ -104,7 +104,7 @@ VALUES
 INSERT INTO receitas_ingredientes (receita_id, ingrediente_id, quantidade)
 VALUES
 (1, 1, 200),
-(2, 2, 1.5),
+(2, 2, 20),
 (3, 3, 100),
 (4, 4, 150),
 (5, 5, 120); 

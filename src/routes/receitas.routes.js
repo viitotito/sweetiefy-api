@@ -251,10 +251,11 @@ router.post("/:receitaId/ingredientes", async (req, res) => {
   const { ingrediente_id, quantidade } = req.body ?? {};
 
   const iid = Number(ingrediente_id);
+  const qtd = Number(quantidade);
   const temIidValido = Number.isInteger(iid) && iid > 0;
-  const temQuantidadeValida = typeof quantidade === "number" && quantidade > 0;
+  const temQuantidadeValida = Number.isInteger(qtd) && qtd >= 0;
 
-  if (!temIidValido || !temQuantidadeValido) {
+  if (!temIidValido || !temQuantidadeValida) {
     return res.status(400).json({
       erro: "Campos obrigatórios: quantidade (number) e ingrediente_id (number > 0)",
     });
@@ -265,7 +266,7 @@ router.post("/:receitaId/ingredientes", async (req, res) => {
       `INSERT INTO receitas_ingredientes (receita_id, ingrediente_id, quantidade)
              VALUES ($1, $2, $3)
              RETURNING id, receita_id, ingrediente_id, quantidade`,
-      [receita_id, iid, qtd]
+      [id, iid, qtd]
     );
     res.status(201).json(rows[0]);
   } catch (e) {
