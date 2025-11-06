@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
 CREATE TABLE IF NOT EXISTS ingredientes (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
-    preco DECIMAL(10,2) NOT NULL,
+    preco NUMERIC(5,2) NOT NULL,
     metrica metrica_enum NOT NULL,
     usuario_id INT NOT NULL REFERENCES usuarios(id),
     data_criacao TIMESTAMP NOT NULL DEFAULT now(),
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS receitas (
     descricao VARCHAR(255),
     usuario_id INT NOT NULL REFERENCES usuarios(id),
     imagem_url VARCHAR(255),
-    preco NUMERIC(10,2) NOT NULL,
+    preco NUMERIC(5,2) NOT NULL,
     data_criacao TIMESTAMP NOT NULL DEFAULT now(),
     data_atualizacao TIMESTAMP NOT NULL DEFAULT now()
 );
@@ -60,9 +60,9 @@ CREATE TABLE IF NOT EXISTS pedidos (
     descricao VARCHAR(100),
     cliente_id INT NOT NULL REFERENCES clientes(id),
     usuario_id INT NOT NULL REFERENCES usuarios(id),
-    preco_total DECIMAL(10,2) NOT NULL,
+    preco_total NUMERIC(5,2) NOT NULL,
     prioridade prioridade_enum NOT NULL,
-    margem_lucro DECIMAL(5,2) NOT NULL,
+    margem_lucro NUMERIC(5,2) NOT NULL,
     estado estado_enum NOT NULL,
     data_limite TIMESTAMP NOT NULL,
     data_criacao TIMESTAMP NOT NULL DEFAULT now(),
@@ -73,8 +73,8 @@ CREATE TABLE IF NOT EXISTS pedidos_receitas (
     id SERIAL PRIMARY KEY,
     pedido_id INT NOT NULL REFERENCES pedidos(id),
     receita_id INT NOT NULL REFERENCES receitas(id),
-    quantidade DECIMAL(10,2) NOT NULL,
-    preco_unitario DECIMAL(10,2) NOT NULL
+    quantidade INT NOT NULL,
+    preco_unitario NUMERIC(5,2) NOT NULL
 );
 
 INSERT INTO usuarios (nome, email, senha_hash, perfil, data_criacao, data_atualizacao)
