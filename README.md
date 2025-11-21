@@ -5,7 +5,7 @@ Muitas vezes confeiteiros possuem problemas na hora de estipular preços para as
 
 Diante disto, o Sweetiefy tem como objetivo auxiliar os vendedores na gestão e precificação de receitas de doces. 
 
-O sistema deve permitir o usuário cadastrar e definir o preço de cada receita, sendo possível também estimar o lucro por cada venda. Seria interessante a implementação de um histórico de vendas, para estimar as vendas realizadas no mês.
+O sistema deve permitir o usuário cadastrar e definir o preço de cada receita, sendo possível também estimar o lucro por cada venda. 
 
 O valor de custo por receita também deve ser visualizado e alterado, sendo atualizado ao selecionar os ingredientes para uma determinada receita.
 
@@ -19,8 +19,6 @@ A opção de uma margem de lucro manipulável também é uma possibilidade, ela 
 * Usuários: Logar/deslogar, CRUD usuários.
 * Receitas: CRUD receitas.
 * Ingredientes: CRUD ingredientes.
-* Pedidos: CRUD, definir taxa, manipular histórico de vendas.
-* Clientes: CRUD clientes.
 
 ## ⌛ Limites e suposições
 ### Limites
@@ -85,8 +83,6 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 - Usuarios — Representa os indivíduos que utilizaram o sistema
 - Ingredientes — Representa os ingredientes utilizados em receitas
 - Receitas — Representa as receitas criadas no sistema
-- Clientes — Representa os indivíduos que realizaram os pedidos
-- Pedidos — Representa os pedidos realizados das receitas
 
 ### 9.2 Campos por entidade
 
@@ -132,62 +128,16 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 | ingrediente_id | número (fk) | sim | 1 |
 | quantidade | número | sim | 3 |
 
-### Clientes
-| Campo | Tipo | Obrigatório | Exemplo |
-|-----------------|--------------------|-------------|-------------------------|
-| id | número | sim | 4 |
-| nome | texto | sim | "Ana" |
-| email | texto | sim | "ana@gmail.com" |
-| telefone | texto | sim | (49) 9192-7122 |
-| endereço | texto | não | Av. Papa João XXIII |
-| usuario_id | número (fk) | sim | 1 |
-| dataCriacao | data/hora | sim | 2025-08-20 14:30 |
-| dataAtualizacao | data/hora | sim | 2025-08-20 15:10 |
-
-### Pedidos
-| Campo | Tipo | Obrigatório | Exemplo |
-|-----------------|--------------------|-------------|-------------------------|
-| id | número | sim | 5 |
-| cliente_id | número (fk) | sim | 2 |
-| usuario_id | número (fk) | sim | 1 |
-| preco_total | número | sim | 4,99 |
-| prioridade | enum | sim | 'Alta' |
-| margem_lucro | número | sim | (10%) 0.1 |
-| estado | enum | sim | 'Aberto' |
-| dataCriacao | data/hora | sim | 2025-08-20 13:10 |
-| dataAtualizacao | data/hora | sim | 2025-08-24 17:10
-| dataLimite | data/hora | sim | 2025-08-25 18:15
-
-### Pedidos_Receitas
-| Campo | Tipo | Obrigatório | Exemplo |
-|-----------------|--------------------|-------------|-------------------------|
-| id | número | sim | 3 |
-| pedido_id | número (fk) | sim | 2 |
-| receita_id | número (fk) | sim | 2 |
-| quantidade | número | sim | 45 |
-| preco_unitario | número | sim | 4,99 |
-
-
 ### 9.3 Relações entre entidades
 - Receitas ↔ Ingredientes (N↔N) → tabela Receitas_Ingredientes
-- Clientes → Pedidos (1→N)
-- Pedidos ↔ Receitas (N↔N) → tabela Pedidos_Receitas
 - Usuarios → Receitas (1→N)
 - Usuarios → Ingredientes (1→N)
-- Usuarios → Clientes (1→N)
-- Usuarios → Pedidos (1→N)
 
 ### 9.4 Modelagem Postgres
 <details>
      <summary>Comandos DDL</summary>
 
 ```sql
---Enum para prioridades
-CREATE TYPE prioridade_enum AS ENUM ('Baixa', 'Media', 'Alta');
-
---Enum para estados
-CREATE TYPE estado_enum AS ENUM ('Aberto', 'Pendente', 'Cancelado', 'Finalizado');
-
 --Enum para métricas
 CREATE TYPE metrica_enum AS ENUM ('Kg', 'g', 'L', 'ml', 'unidade', 'mg');
 
@@ -232,41 +182,6 @@ CREATE TABLE receitas_ingredientes (
     ingrediente_id INT NOT NULL REFERENCES ingredientes(id),
     quantidade DECIMAL(10,2) NOT NULL
 );
-
---Criação da tabela clientes
-CREATE TABLE clientes (
-    id SERIAL PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
-    email VARCHAR(150) NOT NULL UNIQUE,
-    telefone VARCHAR(20) NOT NULL,
-    endereco VARCHAR(255),
-    usuario_id INT NOT NULL REFERENCES usuarios(id),
-    data_criacao TIMESTAMP NOT NULL,
-    data_atualizacao TIMESTAMP NOT NULL
-);
-
---Criação da tabela pedidos
-CREATE TABLE pedidos (
-    id SERIAL PRIMARY KEY,
-    cliente_id INT NOT NULL REFERENCES clientes(id),
-    usuario_id INT NOT NULL REFERENCES usuarios(id),
-    preco_total DECIMAL(10,2) NOT NULL,
-    prioridade prioridade_enum NOT NULL,
-    margem_lucro DECIMAL(5,2) NOT NULL,
-    estado estado_enum NOT NULL,
-    data_criacao TIMESTAMP NOT NULL,
-    data_atualizacao TIMESTAMP NOT NULL,
-    data_limite TIMESTAMP NOT NULL
-);
-
---Criação da tabela pedidos_receitas
-CREATE TABLE pedidos_receitas (
-    id SERIAL PRIMARY KEY,
-    pedido_id INT NOT NULL REFERENCES pedidos(id),
-    receita_id INT NOT NULL REFERENCES receitas(id),
-    quantidade DECIMAL(10,2) NOT NULL,
-    preco_unitario DECIMAL(10,2) NOT NULL
-);
 ```
 </details>
 
@@ -298,25 +213,6 @@ INSERT INTO receitas_ingredientes (receita_id, ingrediente_id, quantidade)
 VALUES
 (1, 1, 200),
 (2, 2, 1.5);
-
---Inserção clientes
-INSERT INTO clientes (nome, email, telefone, endereco, usuario_id, data_criacao, data_atualizacao)
-VALUES
-('Carlos Mendes', 'carlos@gmail.com', '(49) 9192-7122', 'Av. Papa João XXIII', 1, NOW(), NOW()),
-('Mariana Lima', 'mariana@gmail.com', '(49) 9181-3344', 'Rua Blumenau, 123', 2, NOW(), NOW());
-
---Inserção pedidos
-INSERT INTO pedidos (cliente_id, usuario_id, preco_total, prioridade, margem_lucro, estado, data_criacao, data_atualizacao, data_limite)
-VALUES
-(1, 1, 4.99, 'Alta', 0.1, 'Aberto', NOW(), NOW(),NOW()),
-(2, 2, 7.50, 'Media', 0.15, 'Aberto', NOW(), NOW(),NOW());
-
---Inserção pedidos_receitas
-INSERT INTO pedidos_receitas (pedido_id, receita_id, quantidade, preco_unitario)
-VALUES
-(1, 1, 10, 4.99),
-(2, 2, 20, 3.50);
-
 ```
 </details>
 
@@ -328,19 +224,6 @@ VALUES
 SELECT r.id, r.nome AS receita, r.descricao, r.preco, u.nome AS usuario
 FROM receitas r
 JOIN usuarios u ON r.usuario_id = u.id;
-
---Total gasto por cliente
-SELECT c.nome AS cliente, SUM(p.preco_total) AS total_gasto
-FROM pedidos p
-JOIN clientes c ON p.cliente_id = c.id
-GROUP BY c.nome;
-
---Listar por prioridade
-SELECT p.id, c.nome AS cliente, u.nome AS usuario, p.preco_total, p.prioridade, p.estado
-FROM pedidos p
-JOIN clientes c ON p.cliente_id = c.id
-JOIN usuarios u ON p.usuario_id = u.id
-WHERE p.prioridade = 'Alta' AND p.estado = 'Aberto';
 
 --Listar por ingrediente específico
 SELECT r.nome AS receita, r.descricao
