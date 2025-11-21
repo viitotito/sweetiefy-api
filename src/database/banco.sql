@@ -1,9 +1,5 @@
 SET client_encoding = 'UTF8'; 
 
-CREATE TYPE prioridade_enum AS ENUM ('Baixa', 'Media', 'Alta');
-
-CREATE TYPE estado_enum AS ENUM ('Aberto', 'Pendente', 'Cancelado', 'Finalizado');
-
 CREATE TYPE metrica_enum AS ENUM ('Kg', 'g', 'L', 'ml', 'unidade', 'mg');
 
 CREATE TABLE IF NOT EXISTS usuarios (
@@ -44,39 +40,6 @@ CREATE TABLE IF NOT EXISTS receitas_ingredientes (
     quantidade INT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS clientes (
-    id SERIAL PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
-    email VARCHAR(150) NOT NULL UNIQUE,
-    telefone VARCHAR(20) NOT NULL,
-    endereco VARCHAR(255),
-    usuario_id INT NOT NULL REFERENCES usuarios(id),
-    data_criacao TIMESTAMP NOT NULL DEFAULT now(),
-    data_atualizacao TIMESTAMP NOT NULL DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS pedidos (
-    id SERIAL PRIMARY KEY,
-    descricao VARCHAR(100),
-    cliente_id INT NOT NULL REFERENCES clientes(id),
-    usuario_id INT NOT NULL REFERENCES usuarios(id),
-    preco_total NUMERIC(5,2) NOT NULL,
-    prioridade prioridade_enum NOT NULL,
-    margem_lucro NUMERIC(5,2) NOT NULL,
-    estado estado_enum NOT NULL,
-    data_limite TIMESTAMP NOT NULL,
-    data_criacao TIMESTAMP NOT NULL DEFAULT now(),
-    data_atualizacao TIMESTAMP NOT NULL DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS pedidos_receitas (
-    id SERIAL PRIMARY KEY,
-    pedido_id INT NOT NULL REFERENCES pedidos(id),
-    receita_id INT NOT NULL REFERENCES receitas(id),
-    quantidade INT NOT NULL,
-    preco_unitario NUMERIC(5,2) NOT NULL
-);
-
 INSERT INTO usuarios (nome, email, senha_hash, perfil, data_criacao, data_atualizacao)
 VALUES
 ('Ana Souza', 'ana@exemplo.com', '$2a$10$abcdef...', 0, NOW(), NOW()),
@@ -108,27 +71,3 @@ VALUES
 (3, 3, 100),
 (4, 4, 150),
 (5, 5, 120); 
-
-INSERT INTO clientes (nome, email, telefone, endereco, usuario_id, data_criacao, data_atualizacao)
-VALUES
-('Carlos Mendes', 'carlos@gmail.com', '(49) 9192-7122', 'Av. Papa João XXIII', 1, NOW(), NOW()),
-('Mariana Lima', 'mariana@gmail.com', '(49) 9181-3344', 'Rua Blumenau, 123', 2, NOW(), NOW()),
-('Lucas Carvalho', 'lucas.carvalho@gmail.com', '(49) 9155-1122', 'Rua Independência, 100', 1, NOW(), NOW()),
-('Aline Santos', 'aline.santos@gmail.com', '(49) 9177-3344', 'Rua das Hortênsias, 12', 2, NOW(), NOW()),
-('Rafael Torres', 'rafael.torres@gmail.com', '(49) 9133-5566', 'Av. Brasil, 999', 1, NOW(), NOW());
-
-INSERT INTO pedidos (descricao, cliente_id, usuario_id, preco_total, prioridade, margem_lucro, estado, data_criacao, data_atualizacao, data_limite)
-VALUES
-('Doce da dona Ana',1, 1, 4.99, 'Alta', 0.1, 'Aberto', NOW(), NOW(),NOW()),
-(NULL,2, 2, 7.50, 'Media', 0.15, 'Aberto', NOW(), NOW(),NOW()),
-('Bolo para confraternização',5, 1, 7.60, 'Media', 0.18, 'Aberto', NOW(), NOW(), NOW()),
-('Maçã do amor para a festa junina',3, 2, 10.50, 'Alta', 0.22, 'Aberto', NOW(), NOW(), NOW()),
-(NULL,4, 1, 8.25, 'Baixa', 0.15, 'Aberto', NOW(), NOW(), NOW());
-
-INSERT INTO pedidos_receitas (pedido_id, receita_id, quantidade, preco_unitario)
-VALUES
-(1, 1, 10, 4.99),
-(2, 2, 20, 3.50),
-(5, 4, 2, 4.20),  
-(3, 3, 2, 3.80),  
-(4, 5, 1, 5.50);  

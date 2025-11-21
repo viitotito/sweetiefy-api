@@ -4,8 +4,6 @@ import cors from "cors";
 import usuariosRouter from "./routes/usuarios.routes.js";
 import ingredientesRouter from "./routes/ingredientes.routes.js";
 import receitasRouter from "./routes/receitas.routes.js";
-import clientesRouter from "./routes/clientes.routes.js";
-import pedidosRouter from "./routes/pedidos.routes.js";
 
 dotenv.config();
 
@@ -50,45 +48,17 @@ const receitasRoute = {
   DELETAR_RECEITAS: "DELETE /api/receitas/:id",
 };
 
-const clientesRoute = {
-  LISTAR_CLIENTES: "GET /api/clientes",
-  MOSTRAR_CLIENTES: "GET /api/clientes/:id",
-  CRIAR_CLIENTES:
-    "POST /api/clientes  BODY: { nome: 'string', email: 'string', telefone: 'string', endereco?: 'string', usuario_id: number }",
-  SUBSTITUIR_CLIENTES:
-    "PUT /api/clientes/:id  BODY: { nome: 'string', email: 'string', telefone: 'string', endereco?: 'string', usuario_id: number }",
-  ATUALIZAR_CLIENTES:
-    "PATCH /api/clientes/:id  BODY: { nome: 'string', email: 'string', telefone: 'string', endereco?: 'string', usuario_id: number }",
-  DELETAR_CLIENTES: "DELETE /api/clientes/:id",
-};
-
-const pedidosRoute = {
-  LISTAR_PEDIDOS: "GET /api/pedidos",
-  MOSTRAR_PEDIDOS: "GET /api/pedidos/:id",
-  CRIAR_PEDIDOS:
-    "POST /api/pedidos  BODY: { nome: 'string', email: 'string', telefone: 'string', endereco?: 'string', usuario_id: number }",
-  SUBSTITUIR_PEDIDOS:
-    "PUT /api/pedidos/:id  BODY: { nome: 'string', email: 'string', telefone: 'string', endereco?: 'string', usuario_id: number }",
-  ATUALIZAR_PEDIDOS:
-    "PATCH /api/pedidos/:id  BODY: { nome: 'string', email: 'string', telefone: 'string', endereco?: 'string', usuario_id: number }",
-  DELETAR_PEDIDOS: "DELETE /api/pedidos/:id",
-};
-
 app.get("/", (_req, res) => {
   res.json({
     USUARIOS: usuariosRoute,
     INGREDIENTE: ingredientesRoute,
     RECEITAS: receitasRoute,
-    CLIENTES: clientesRoute,
-    PEDIDOS: pedidosRoute
   });
 });
 
 app.use("/api/usuarios", usuariosRouter);
 app.use("/api/ingredientes", ingredientesRouter);
 app.use("/api/receitas", receitasRouter);
-app.use("/api/clientes", clientesRouter);
-app.use("/api/pedidos", pedidosRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
