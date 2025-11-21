@@ -9,8 +9,6 @@ O sistema deve permitir o usuário cadastrar e definir o preço de cada receita,
 
 O valor de custo por receita também deve ser visualizado e alterado, sendo atualizado ao selecionar os ingredientes para uma determinada receita.
 
-A opção de uma margem de lucro manipulável também é uma possibilidade, ela poderia ajustar ou sugerir um preço ideal para a venda de um determinado doce, visando a margem de lucro escolhida pelo usuário.
-
 ## 👥 Atores / Decisores
 * Atores: Usuários gerais, confeiteiros.
 * Decisores/Apoiadores: Professores; Coordenação do Curso.
