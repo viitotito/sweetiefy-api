@@ -51,7 +51,7 @@ const receitasRoute = {
 app.get("/", (_req, res) => {
   res.json({
     USUARIOS: usuariosRoute,
-    INGREDIENTE: ingredientesRoute,
+    INGREDIENTES: ingredientesRoute,
     RECEITAS: receitasRoute,
   });
 });
