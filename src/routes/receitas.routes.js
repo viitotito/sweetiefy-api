@@ -83,7 +83,7 @@ router.post("/", async (req, res) => {
       `INSERT INTO receitas (nome, descricao, usuario_id, imagem_url, preco)
              VALUES ($1, $2, $3, $4, $5)
              RETURNING id, nome, descricao, usuario_id, imagem_url, preco, data_criacao, data_atualizacao`,
-      [nome.trim(), descricao?.trim(), uid, imagem_url?.trim(), precoNum]
+      [nome.trim(), descricao?.trim(), uid, imagem_url?.trim(), preco]
     );
     res.status(201).json(rows[0]);
   } catch (e) {
