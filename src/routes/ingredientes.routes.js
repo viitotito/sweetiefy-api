@@ -13,7 +13,7 @@ function getAuthInfo(req, res) {
   const isAdmin = req.user?.papel === 1;
 
   if (!uid) {
-    res.status(401).json({ erro: "não autenticado" });
+    res.status(401).json({ erro: "Usuário não autenticado." });
     return null;
   }
   return { uid, isAdmin };
@@ -38,23 +38,25 @@ router.get("/", async (_req, res) => {
     );
     res.json(rows);
   } catch (e) {
-    console.error("Erro ao listar ingredientes:", e);
-    res.status(500).json({ erro: "Erro interno do servidor." });
+    console.error("Erro ao listar ingredientes (GET):", e);
+    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível listar ingredientes." });
   }
 });
 
 router.get("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
-  if (!id) return res.status(400).json({ erro: "ID inválido." });
+  if (!id) return res.status(400).json({ erro: "ID do ingrediente inválido." });
 
   try {
     const ingrediente = await obterIngredientePorId(id);
-    if (!ingrediente) return res.status(404).json({ erro: "Ingrediente não encontrado." });
+    if (!ingrediente) {
+      return res.status(404).json({ erro: "Ingrediente não encontrado." });
+    }
 
     res.json(ingrediente);
   } catch (e) {
-    console.error("Erro ao buscar ingrediente:", e);
-    res.status(500).json({ erro: "Erro interno do servidor." });
+    console.error("Erro ao buscar ingrediente (GET:id):", e);
+    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível buscar ingrediente." });
   }
 });
 
@@ -65,13 +67,14 @@ router.post("/", async (req, res) => {
 
   const { nome, preco, metrica } = req.body ?? {};
 
-  const temNome = typeof nome === "string" && nome.trim() !== "";
-  const temPreco = typeof Number(preco) === "number" && Number(preco) >= 0;
-  const temMetrica = typeof metrica === "string" && metrica.trim() !== "";
+  const temNome = typeof nome === "string" && nome.trim().length > 0;
+  const precoNum = Number(preco);
+  const temPreco = typeof precoNum === "number" && !Number.isNaN(precoNum) && precoNum >= 0;
+  const temMetrica = typeof metrica === "string" && metrica.trim().length > 0;
 
   if (!temNome || !temPreco || !temMetrica) {
     return res.status(400).json({
-      erro: "Campos obrigatórios: nome (string), preco (>=0), metrica (string)."
+      erro: "Campos obrigatórios: nome (string não vazia), preco (número >= 0) e metrica (string não vazia).",
     });
   }
 
@@ -80,19 +83,19 @@ router.post("/", async (req, res) => {
       `INSERT INTO ingredientes (nome, preco, metrica, usuario_id)
        VALUES ($1, $2, $3, $4)
        RETURNING id, nome, preco, metrica, usuario_id, data_criacao, data_atualizacao`,
-      [nome.trim(), Number(preco), metrica.trim(), uid]
+      [nome.trim(), precoNum, metrica.trim(), uid]
     );
 
     res.status(201).json(rows[0]);
   } catch (e) {
-    console.error("Erro ao criar ingrediente:", e);
-    res.status(500).json({ erro: "Erro interno ao criar ingrediente." });
+    console.error("Erro ao criar ingrediente (POST):", e);
+    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível criar ingrediente." });
   }
 });
 
 router.put("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
-  if (!id) return res.status(400).json({ erro: "ID inválido." });
+  if (!id) return res.status(400).json({ erro: "ID do ingrediente inválido." });
 
   const auth = getAuthInfo(req, res);
   if (!auth) return;
@@ -100,42 +103,45 @@ router.put("/:id", async (req, res) => {
 
   const { nome, preco, metrica } = req.body ?? {};
 
-  const temNome = typeof nome === "string" && nome.trim() !== "";
-  const temPreco = typeof Number(preco) === "number" && Number(preco) >= 0;
-  const temMetrica = typeof metrica === "string" && metrica.trim() !== "";
+  const temNome = typeof nome === "string" && nome.trim().length > 0;
+  const precoNum = Number(preco);
+  const temPreco = typeof precoNum === "number" && !Number.isNaN(precoNum) && precoNum >= 0;
+  const temMetrica = typeof metrica === "string" && metrica.trim().length > 0;
 
   if (!temNome || !temPreco || !temMetrica) {
     return res.status(400).json({
-      erro: "Para PUT envie: nome, preco e metrica."
+      erro: "Para PUT, envie nome (string não vazia), preco (número >= 0) e metrica (string não vazia).",
     });
   }
 
   try {
     const ingrediente = await obterIngredientePorId(id);
-    if (!ingrediente) return res.status(404).json({ erro: "Ingrediente não encontrado." });
+    if (!ingrediente) {
+      return res.status(404).json({ erro: "Ingrediente não encontrado." });
+    }
 
     if (!isAdmin && ingrediente.usuario_id !== uid) {
-      return res.status(403).json({ erro: "Sem permissão." });
+      return res.status(404).json({ erro: "Ingrediente não encontrado." });
     }
 
     const { rows } = await pool.query(
       `UPDATE ingredientes
-       SET nome=$1, preco=$2, metrica=$3, data_atualizacao = now()
+       SET nome = $1, preco = $2, metrica = $3, data_atualizacao = now()
        WHERE id = $4
        RETURNING id, nome, preco, metrica, usuario_id, data_atualizacao`,
-      [nome.trim(), Number(preco), metrica.trim(), id]
+      [nome.trim(), precoNum, metrica.trim(), id]
     );
 
     res.json(rows[0]);
   } catch (e) {
-    console.error("Erro ao atualizar ingrediente:", e);
-    res.status(500).json({ erro: "Erro interno." });
+    console.error("Erro ao atualizar ingrediente (PUT):", e);
+    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível atualizar ingrediente." });
   }
 });
 
 router.patch("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
-  if (!id) return res.status(400).json({ erro: "ID inválido." });
+  if (!id) return res.status(400).json({ erro: "ID do ingrediente inválido." });
 
   const auth = getAuthInfo(req, res);
   if (!auth) return;
@@ -144,15 +150,19 @@ router.patch("/:id", async (req, res) => {
   const { nome, preco, metrica } = req.body ?? {};
 
   if (nome === undefined && preco === undefined && metrica === undefined) {
-    return res.status(400).json({ erro: "Envie ao menos um campo." });
+    return res.status(400).json({
+      erro: "Envie ao menos um campo para atualizar.",
+    });
   }
 
   try {
     const ingrediente = await obterIngredientePorId(id);
-    if (!ingrediente) return res.status(404).json({ erro: "Ingrediente não encontrado." });
+    if (!ingrediente) {
+      return res.status(404).json({ erro: "Ingrediente não encontrado." });
+    }
 
     if (!isAdmin && ingrediente.usuario_id !== uid) {
-      return res.status(403).json({ erro: "Sem permissão." });
+      return res.status(404).json({ erro: "Ingrediente não encontrado." });
     }
 
     const updates = [];
@@ -160,23 +170,26 @@ router.patch("/:id", async (req, res) => {
     let idx = 1;
 
     if (nome !== undefined) {
-      if (typeof nome !== "string" || nome.trim() === "")
-        return res.status(400).json({ erro: "'nome' inválido." });
+      if (typeof nome !== "string" || nome.trim() === "") {
+        return res.status(400).json({ erro: "Campo 'nome' deve ser string não vazia." });
+      }
       updates.push(`nome = $${idx++}`);
       params.push(nome.trim());
     }
 
     if (preco !== undefined) {
-      const p = Number(preco);
-      if (isNaN(p) || p < 0)
-        return res.status(400).json({ erro: "'preco' inválido." });
+      const pnum = Number(preco);
+      if (Number.isNaN(pnum) || pnum < 0) {
+        return res.status(400).json({ erro: "Campo 'preco' deve ser número >= 0." });
+      }
       updates.push(`preco = $${idx++}`);
-      params.push(p);
+      params.push(pnum);
     }
 
     if (metrica !== undefined) {
-      if (typeof metrica !== "string" || metrica.trim() === "")
-        return res.status(400).json({ erro: "'metrica' inválida." });
+      if (typeof metrica !== "string" || metrica.trim() === "") {
+        return res.status(400).json({ erro: "Campo 'metrica' deve ser string não vazia." });
+      }
       updates.push(`metrica = $${idx++}`);
       params.push(metrica.trim());
     }
@@ -197,13 +210,13 @@ router.patch("/:id", async (req, res) => {
     res.json(rows[0]);
   } catch (e) {
     console.error("Erro ao atualizar ingrediente (PATCH):", e);
-    res.status(500).json({ erro: "Erro interno." });
+    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível atualizar ingrediente." });
   }
 });
 
 router.delete("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
-  if (!id) return res.status(400).json({ erro: "ID inválido." });
+  if (!id) return res.status(400).json({ erro: "ID do ingrediente inválido." });
 
   const auth = getAuthInfo(req, res);
   if (!auth) return;
@@ -227,7 +240,7 @@ router.delete("/:id", async (req, res) => {
     res.status(204).end();
   } catch (e) {
     console.error("Erro ao deletar ingrediente:", e);
-    res.status(500).json({ erro: "Erro interno (verifique fk)." });
+    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível remover ingrediente (verifique fk)." });
   }
 });
 

@@ -1,62 +1,75 @@
-import { Router } from "express";         
-import jwt from "jsonwebtoken";           
-import bcrypt from "bcryptjs";            
-import dotenv from "dotenv";              
-import { pool } from "../database/db.js"; 
+import { Router } from "express";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import dotenv from "dotenv";
+import { pool } from "../database/db.js";
 
-dotenv.config();                          
-const router = Router();                  
+dotenv.config();
+const router = Router();
 
 const {
-    JWT_ACCESS_SECRET,                      
-    JWT_REFRESH_SECRET,                     
-    JWT_ACCESS_EXPIRES = "15m",             
-    JWT_REFRESH_EXPIRES = "7d",             
+    JWT_ACCESS_SECRET,
+    JWT_REFRESH_SECRET,
+    JWT_ACCESS_EXPIRES = "15m",
+    JWT_REFRESH_EXPIRES = "7d",
 } = process.env;
 
 const isProduction = process.env.NODE_ENV === "production";
 
-const REFRESH_COOKIE = "refresh_token";           
-const REFRESH_MAX_AGE = 7 * 24 * 60 * 60 * 1000;  
+const REFRESH_COOKIE = "refresh_token";
+const REFRESH_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 
 function signAccessToken(u) {
-    return jwt.sign({ sub: u.id, papel: u.papel, nome: u.nome }, JWT_ACCESS_SECRET, {
-        expiresIn: JWT_ACCESS_EXPIRES,
-    });
+    return jwt.sign(
+        { sub: u.id, papel: u.papel, nome: u.nome },
+        JWT_ACCESS_SECRET,
+        { expiresIn: JWT_ACCESS_EXPIRES }
+    );
 }
+
 function signRefreshToken(u) {
-    return jwt.sign({ sub: u.id, tipo: "refresh" }, JWT_REFRESH_SECRET, {
-        expiresIn: JWT_REFRESH_EXPIRES,
-    });
+    return jwt.sign(
+        { sub: u.id, tipo: "refresh" },
+        JWT_REFRESH_SECRET,
+        { expiresIn: JWT_REFRESH_EXPIRES }
+    );
 }
 
 function cookieOpts(req) {
     return {
         httpOnly: true,
         sameSite: "Lax",
-        secure: isProduction,            
+        secure: isProduction,
         path: req.baseUrl || "/",
         maxAge: REFRESH_MAX_AGE,
     };
 }
+
 function setRefreshCookie(res, req, token) {
     res.cookie(REFRESH_COOKIE, token, cookieOpts(req));
 }
+
 function clearRefreshCookie(res, req) {
     res.clearCookie(REFRESH_COOKIE, cookieOpts(req));
 }
 
 router.post("/register", async (req, res) => {
     const { nome, email, senha } = req.body ?? {};
+
     if (!nome || !email || !senha) {
-        return res.status(400).json({ erro: "nome, email e senha são obrigatórios" });
+        return res.status(400).json({
+            erro: "Nome, email e senha são obrigatórios.",
+        });
     }
+
     if (String(senha).length < 6) {
-        return res.status(400).json({ erro: "senha deve ter pelo menos 6 caracteres" });
+        return res.status(400).json({
+            erro: "Senha deve ter pelo menos 6 caracteres.",
+        });
     }
 
     try {
-        const senha_hash = await bcrypt.hash(senha, 12); 
+        const senha_hash = await bcrypt.hash(senha, 12);
         const papel = 0;
 
         const r = await pool.query(
@@ -65,6 +78,7 @@ router.post("/register", async (req, res) => {
              RETURNING "id","nome","email","papel"`,
             [String(nome).trim(), String(email).trim().toLowerCase(), senha_hash, papel]
         );
+
         const user = r.rows[0];
 
         const access_token = signAccessToken(user);
@@ -75,69 +89,124 @@ router.post("/register", async (req, res) => {
             token_type: "Bearer",
             access_token,
             expires_in: JWT_ACCESS_EXPIRES,
-            user: { id: user.id, nome: user.nome, email: user.email, papel: user.papel },
+            user: {
+                id: user.id,
+                nome: user.nome,
+                email: user.email,
+                papel: user.papel,
+            },
         });
     } catch (err) {
-        if (err?.code === "23505") return res.status(409).json({ erro: "email já cadastrado" });
-        return res.status(500).json({ erro: "erro interno" });
+        if (err?.code === "23505") {
+            return res.status(409).json({
+                erro: "Email já foi cadastrado.",
+            });
+        }
+
+        console.error("Erro ao registrar usuário:", err);
+        return res.status(500).json({
+            erro: "Erro interno do servidor. Não foi possível registrar usuário.",
+        });
     }
 });
 
 router.post("/login", async (req, res) => {
     const { email, senha } = req.body ?? {};
-    if (!email || !senha) return res.status(400).json({ erro: "email e senha são obrigatórios" });
+
+    if (!email || !senha) {
+        return res.status(400).json({
+            erro: "Campos email e senha são obrigatórios.",
+        });
+    }
 
     try {
         const r = await pool.query(
-            `SELECT "id","nome","email","senha_hash","papel" FROM "Usuarios" WHERE "email" = $1`,
+            `SELECT "id","nome","email","senha_hash","papel"
+             FROM "Usuarios"
+             WHERE "email" = $1`,
             [email]
         );
-        if (!r.rowCount) return res.status(401).json({ erro: "credenciais inválidas" });
+
+        if (!r.rowCount) {
+            return res.status(401).json({ erro: "Credenciais inválidas." });
+        }
 
         const user = r.rows[0];
-        const ok = await bcrypt.compare(senha, user.senha_hash); 
-        if (!ok) return res.status(401).json({ erro: "credenciais inválidas" });
+        const ok = await bcrypt.compare(senha, user.senha_hash);
 
-        const access_token = signAccessToken(user);    
-        const refresh_token = signRefreshToken(user);  
-        setRefreshCookie(res, req, refresh_token);  
+        if (!ok) {
+            return res.status(401).json({ erro: "Credenciais inválidas." });
+        }
+
+        const access_token = signAccessToken(user);
+        const refresh_token = signRefreshToken(user);
+        setRefreshCookie(res, req, refresh_token);
 
         return res.json({
             token_type: "Bearer",
             access_token,
             expires_in: JWT_ACCESS_EXPIRES,
-            user: { id: user.id, nome: user.nome, email: user.email, papel: user.papel },
+            user: {
+                id: user.id,
+                nome: user.nome,
+                email: user.email,
+                papel: user.papel,
+            },
         });
-    } catch {
-        return res.status(500).json({ erro: "erro interno" });
+    } catch (e) {
+        console.error("Erro ao fazer login:", e);
+        return res.status(500).json({
+            erro: "Erro interno do servidor. Não foi possível realizar login.",
+        });
     }
 });
 
 router.post("/refresh", async (req, res) => {
     const refresh = req.cookies?.[REFRESH_COOKIE];
-    if (!refresh) return res.status(401).json({ erro: "refresh ausente" });
+
+    if (!refresh) {
+        return res.status(401).json({
+            erro: "Refresh token ausente.",
+        });
+    }
 
     try {
         const payload = jwt.verify(refresh, JWT_REFRESH_SECRET);
-        if (payload.tipo !== "refresh") return res.status(400).json({ erro: "refresh inválido" });
+
+        if (payload.tipo !== "refresh") {
+            return res.status(400).json({
+                erro: "Refresh token inválido.",
+            });
+        }
 
         const r = await pool.query(
-            `SELECT "id","nome","email","papel" FROM "Usuarios" WHERE "id" = $1`,
+            `SELECT "id","nome","email","papel"
+             FROM "Usuarios"
+             WHERE "id" = $1`,
             [payload.sub]
         );
-        if (!r.rowCount) return res.status(401).json({ erro: "usuário não existe mais" });
+
+        if (!r.rowCount) {
+            return res.status(401).json({
+                erro: "O usuário não existe mais.",
+            });
+        }
 
         const user = r.rows[0];
-        const new_access = signAccessToken(user);     
+        const new_access = signAccessToken(user);
 
         return res.json({
             token_type: "Bearer",
             access_token: new_access,
             expires_in: JWT_ACCESS_EXPIRES,
         });
-    } catch {
+    } catch (e) {
+        console.error("Erro ao validar refresh token:", e);
+
         clearRefreshCookie(res, req);
-        return res.status(401).json({ erro: "refresh inválido ou expirado" });
+        return res.status(401).json({
+            erro: "Refresh token inválido ou expirado.",
+        });
     }
 });
 
@@ -146,4 +215,4 @@ router.post("/logout", async (req, res) => {
     return res.status(204).end();
 });
 
-export default router;              
+export default router;
