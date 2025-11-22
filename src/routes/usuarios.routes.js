@@ -3,7 +3,6 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";            
 import dotenv from "dotenv";              
 import { pool } from "../database/db.js"; 
-import { recaptchaMiddleware } from "../middlewares/recaptcha.js";
 
 dotenv.config();                          
 const router = Router();                  
@@ -47,7 +46,7 @@ function clearRefreshCookie(res, req) {
     res.clearCookie(REFRESH_COOKIE, cookieOpts(req));
 }
 
-router.post("/register", recaptchaMiddleware, async (req, res) => {
+router.post("/register", async (req, res) => {
     const { nome, email, senha } = req.body ?? {};
     if (!nome || !email || !senha) {
         return res.status(400).json({ erro: "nome, email e senha são obrigatórios" });
@@ -84,7 +83,7 @@ router.post("/register", recaptchaMiddleware, async (req, res) => {
     }
 });
 
-router.post("/login", recaptchaMiddleware, async (req, res) => {
+router.post("/login", async (req, res) => {
     const { email, senha } = req.body ?? {};
     if (!email || !senha) return res.status(400).json({ erro: "email e senha são obrigatórios" });
 
