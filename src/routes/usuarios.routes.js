@@ -1,241 +1,150 @@
-import { Router } from "express";
-import { pool } from "../database/db.js";
+import { Router } from "express";         
+import jwt from "jsonwebtoken";           
+import bcrypt from "bcryptjs";            
+import dotenv from "dotenv";              
+import { pool } from "../database/db.js"; 
+import { recaptchaMiddleware } from "../middlewares/recaptcha.js";
 
-const router = Router();
+dotenv.config();                          
+const router = Router();                  
 
-router.get("/", async (_req, res) => {
-  try {
-    const { rows } = await pool.query(
-      `SELECT id, nome, email, senha_hash, perfil, data_criacao, data_atualizacao 
-             FROM usuarios 
-             ORDER BY nome ASC`
-    );
-    res.json(rows);
-  } catch (e) {
-    console.error("Erro ao listar usuários (GET):", e);
-    res.status(500).json({
-      erro: "Erro interno do servidor. Não foi possível listar usuários.",
+const {
+    JWT_ACCESS_SECRET,                      
+    JWT_REFRESH_SECRET,                     
+    JWT_ACCESS_EXPIRES = "15m",             
+    JWT_REFRESH_EXPIRES = "7d",             
+} = process.env;
+
+const isProduction = process.env.NODE_ENV === "production";
+
+const REFRESH_COOKIE = "refresh_token";           
+const REFRESH_MAX_AGE = 7 * 24 * 60 * 60 * 1000;  
+
+function signAccessToken(u) {
+    return jwt.sign({ sub: u.id, papel: u.papel, nome: u.nome }, JWT_ACCESS_SECRET, {
+        expiresIn: JWT_ACCESS_EXPIRES,
     });
-  }
+}
+function signRefreshToken(u) {
+    return jwt.sign({ sub: u.id, tipo: "refresh" }, JWT_REFRESH_SECRET, {
+        expiresIn: JWT_REFRESH_EXPIRES,
+    });
+}
+
+function cookieOpts(req) {
+    return {
+        httpOnly: true,
+        sameSite: "Lax",
+        secure: isProduction,            
+        path: req.baseUrl || "/",
+        maxAge: REFRESH_MAX_AGE,
+    };
+}
+function setRefreshCookie(res, req, token) {
+    res.cookie(REFRESH_COOKIE, token, cookieOpts(req));
+}
+function clearRefreshCookie(res, req) {
+    res.clearCookie(REFRESH_COOKIE, cookieOpts(req));
+}
+
+router.post("/register", recaptchaMiddleware, async (req, res) => {
+    const { nome, email, senha } = req.body ?? {};
+    if (!nome || !email || !senha) {
+        return res.status(400).json({ erro: "nome, email e senha são obrigatórios" });
+    }
+    if (String(senha).length < 6) {
+        return res.status(400).json({ erro: "senha deve ter pelo menos 6 caracteres" });
+    }
+
+    try {
+        const senha_hash = await bcrypt.hash(senha, 12); 
+        const papel = 0;
+
+        const r = await pool.query(
+            `INSERT INTO "Usuarios" ("nome","email","senha_hash","papel")
+             VALUES ($1,$2,$3,$4)
+             RETURNING "id","nome","email","papel"`,
+            [String(nome).trim(), String(email).trim().toLowerCase(), senha_hash, papel]
+        );
+        const user = r.rows[0];
+
+        const access_token = signAccessToken(user);
+        const refresh_token = signRefreshToken(user);
+        setRefreshCookie(res, req, refresh_token);
+
+        return res.status(201).json({
+            token_type: "Bearer",
+            access_token,
+            expires_in: JWT_ACCESS_EXPIRES,
+            user: { id: user.id, nome: user.nome, email: user.email, papel: user.papel },
+        });
+    } catch (err) {
+        if (err?.code === "23505") return res.status(409).json({ erro: "email já cadastrado" });
+        return res.status(500).json({ erro: "erro interno" });
+    }
 });
 
-router.get("/:id", async (req, res) => {
-  const id = Number(req.params.id);
+router.post("/login", recaptchaMiddleware, async (req, res) => {
+    const { email, senha } = req.body ?? {};
+    if (!email || !senha) return res.status(400).json({ erro: "email e senha são obrigatórios" });
 
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ erro: "ID do usuário inválido." });
-  }
+    try {
+        const r = await pool.query(
+            `SELECT "id","nome","email","senha_hash","papel" FROM "Usuarios" WHERE "email" = $1`,
+            [email]
+        );
+        if (!r.rowCount) return res.status(401).json({ erro: "credenciais inválidas" });
 
-  try {
-    const { rows } = await pool.query(
-      `SELECT id, nome, email, senha_hash, perfil, data_criacao, data_atualizacao 
-             FROM usuarios
-             WHERE id = $1`,
-      [id]
-    );
+        const user = r.rows[0];
+        const ok = await bcrypt.compare(senha, user.senha_hash); 
+        if (!ok) return res.status(401).json({ erro: "credenciais inválidas" });
 
-    if (!rows[0]) {
-      return res.status(404).json({ erro: "Usuário não encontrado." });
+        const access_token = signAccessToken(user);    
+        const refresh_token = signRefreshToken(user);  
+        setRefreshCookie(res, req, refresh_token);  
+
+        return res.json({
+            token_type: "Bearer",
+            access_token,
+            expires_in: JWT_ACCESS_EXPIRES,
+            user: { id: user.id, nome: user.nome, email: user.email, papel: user.papel },
+        });
+    } catch {
+        return res.status(500).json({ erro: "erro interno" });
     }
-
-    res.json(rows[0]);
-  } catch (e) {
-    console.error("Erro ao buscar usuário (GET:id):", e);
-    res.status(500).json({
-      erro: "Erro interno do servidor. Não foi possível buscar usuário.",
-    });
-  }
 });
 
-router.post("/", async (req, res) => {
-  const { nome, email, senha_hash, perfil } = req.body ?? {};
-  const temNomeValido = typeof nome === "string" && nome.trim().length > 0;
-  const temEmailValido = typeof email === "string" && email.trim().length > 0;
-  const temSenhaValida =
-    typeof senha_hash === "string" && senha_hash.trim().length > 0;
-  const temPerfilValido =
-    typeof perfil === "number" && perfil >= 0 && perfil <= 1;
+router.post("/refresh", async (req, res) => {
+    const refresh = req.cookies?.[REFRESH_COOKIE];
+    if (!refresh) return res.status(401).json({ erro: "refresh ausente" });
 
-  if (!temNomeValido || !temEmailValido || !temSenhaValida || !temPerfilValido) {
-    return res.status(400).json({
-      erro: "Campos obrigatórios: nome (string), email (string), senha_hash (string) e perfil (number (0,1)).",
-    });
-  }
+    try {
+        const payload = jwt.verify(refresh, JWT_REFRESH_SECRET);
+        if (payload.tipo !== "refresh") return res.status(400).json({ erro: "refresh inválido" });
 
-  try {
-    const { rows } = await pool.query(
-      `INSERT INTO usuarios (nome, email, senha_hash, perfil)
-             VALUES ($1, $2, $3, $4)
-             RETURNING id, nome, email, senha_hash, perfil, data_criacao, data_atualizacao`,
-      [nome.trim(), email.trim(), senha_hash.trim(), perfil]
-    );
-    res.status(201).json(rows[0]);
-  } catch (e) {
-    console.error("Erro ao criar usuário (POST):", e);
-    res.status(500).json({
-      erro: "Erro ao criar usuário. Verifique se os campos são válidos.",
-    });
-  }
+        const r = await pool.query(
+            `SELECT "id","nome","email","papel" FROM "Usuarios" WHERE "id" = $1`,
+            [payload.sub]
+        );
+        if (!r.rowCount) return res.status(401).json({ erro: "usuário não existe mais" });
+
+        const user = r.rows[0];
+        const new_access = signAccessToken(user);     
+
+        return res.json({
+            token_type: "Bearer",
+            access_token: new_access,
+            expires_in: JWT_ACCESS_EXPIRES,
+        });
+    } catch {
+        clearRefreshCookie(res, req);
+        return res.status(401).json({ erro: "refresh inválido ou expirado" });
+    }
 });
 
-router.put("/:id", async (req, res) => {
-  const id = Number(req.params.id);
-  const { nome, email, senha_hash, perfil } = req.body ?? {};
-
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ erro: "ID do usuário inválido." });
-  }
-  
-  const temNomeValido = typeof nome === "string" && nome.trim().length > 0;
-  const temEmailValido = typeof email === "string" && email.trim().length > 0;
-  const temSenhaValida =
-    typeof senha_hash === "string" && senha_hash.trim().length > 0;
-  const temPerfilValido =
-    typeof perfil === "number" && perfil >= 0 && perfil <= 1;
-
-  if (!temNomeValido || !temEmailValido || !temSenhaValida || !temPerfilValido) {
-    return res.status(400).json({
-      erro: "Campos obrigatórios: nome (string), email (string), senha_hash (string) e perfil (number (0,1)).",
-    });
-  }
-
-  try {
-    const { rows } = await pool.query(
-      `UPDATE usuarios
-                 SET nome = $1,
-                     email = $2,
-                     senha_hash = $3,
-                     perfil = $4,
-                     data_atualizacao = now()
-             WHERE id = $5
-             RETURNING id, nome, email, perfil, perfil, data_atualizacao`,
-      [nome.trim(), email.trim(), senha_hash.trim(), perfil, id]
-    );
-
-    if (!rows[0]) {
-      return res.status(404).json({ erro: "Usuário não encontrado." });
-    }
-
-    res.json(rows[0]);
-  } catch (e) {
-    console.error("Erro ao atualizar usuário (PUT):", e);
-    res.status(500).json({
-      erro: "Erro interno do servidor. Não foi possível atualizar usuário.",
-    });
-  }
+router.post("/logout", async (req, res) => {
+    clearRefreshCookie(res, req);
+    return res.status(204).end();
 });
 
-router.patch("/:id", async (req, res) => {
-  const id = Number(req.params.id);
-  const { nome, email, senha_hash, perfil } = req.body ?? {};
-
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ erro: "ID do usuário inválido." });
-  }
-
-  if (
-    nome === undefined &&
-    email === undefined &&
-    senha_hash === undefined &&
-    perfil === undefined
-  ) {
-    return res
-      .status(400)
-      .json({ erro: "Envie ao menos um campo para atualizar." });
-  }
-
-  const updates = [];
-  const values = [id];
-  let paramIndex = 2;
-
-  if (nome !== undefined) {
-    if (typeof nome !== "string" || nome.trim() === "") {
-      return res
-        .status(400)
-        .json({ erro: "Campo 'nome' deve ser string não vazia." });
-    }
-    updates.push(`nome = $${paramIndex++}`);
-    values.push(nome.trim());
-  }
-
-  
-  if (email !== undefined) {
-    if (typeof email !== "string" || nome.trim() === "") {
-      return res
-        .status(400)
-        .json({ erro: "Campo 'email' deve ser string não vazia." });
-    }
-    updates.push(`nome = $${paramIndex++}`);
-    values.push(nome.trim());
-  }
-
-  
-  if (senha_hash !== undefined) {
-    if (typeof senha_hash !== "string" || nome.trim() === "") {
-      return res
-        .status(400)
-        .json({ erro: "Campo 'senha_hash' deve ser string não vazia." });
-    }
-    updates.push(`nome = $${paramIndex++}`);
-    values.push(nome.trim());
-  }
-
-  if (perfil !== undefined) {
-    const p = Number(perfil);
-    if (typeof perfil !== "number" || p < 0 && p > 1) {
-      return res
-        .status(400)
-        .json({ erro: "Campo 'perfil' deve ser 1 ou 0." });
-    }
-    updates.push(`perfil = $${paramIndex++}`);
-    values.push(p);
-  }
-  updates.push(`data_atualizacao = now()`);
-
-  try {
-    const query = `
-            UPDATE usuarios
-            SET ${updates.join(", ")}
-            WHERE id = $1
-            RETURNING id, nome, email, senha_hash perfil, data_atualizacao`;
-
-    const { rows } = await pool.query(query, values);
-
-    if (!rows[0]) {
-      return res.status(404).json({ erro: "Usuário não encontrado." });
-    }
-
-    res.json(rows[0]);
-  } catch (e) {
-    console.error("Erro ao atualizar usuário (PATCH):", e);
-    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível atualizar parcialmente o usuário." });
-  }
-});
-
-router.delete("/:id", async (req, res) => {
-  const id = Number(req.params.id);
-
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ erro: "ID do usuário inválido." });
-  }
-
-  try {
-    const r = await pool.query(
-      `DELETE FROM usuarios WHERE id = $1 RETURNING id`,
-      [id]
-    );
-
-    if (!r.rowCount) {
-      return res.status(404).json({ erro: "Usuário não encontrado." });
-    }
-
-    res.status(204).end();
-  } catch (e) {
-    console.error("Erro ao deletar usuário (DELETE):", e);
-    res.status(500).json({
-      erro: "Erro interno do servidor. Não foi possível deletar usuário.",
-    });
-  }
-});
-
-export default router;
+export default router;              

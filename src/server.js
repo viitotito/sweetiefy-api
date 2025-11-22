@@ -1,67 +1,52 @@
-import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
-import usuariosRouter from "./routes/usuarios.routes.js";
-import ingredientesRouter from "./routes/ingredientes.routes.js";
-import receitasRouter from "./routes/receitas.routes.js";
+import express from "express";           
+import dotenv from "dotenv";             
+import cors from "cors";                 
+import cookieParser from "cookie-parser";
+import chamadosRouter from "./routes/ingredientes.routes.js";  
+import receitasRouter from "./routes/receitas.routes.js";  
+import usuariosRouter from "./routes/usuarios.routes.js";  
+import { authMiddleware } from "./middlewares/auth.js";    
+import { globalLimiter, authLimiter, userLimiter } from "./middlewares/rateLimiters.js";
 
-dotenv.config();
+dotenv.config();                         
+const app = express();                   
 
-const app = express();
+app.set("trust proxy", 1);
 
 app.use(express.json());
-app.use(cors());
 
-const usuariosRoute = {
-  LISTAR_USUARIOS: "GET /api/usuarios",
-  MOSTRAR_USUARIOS: "GET /api/usuarios/:id",
-  CRIAR_USUARIOS:
-    "POST /api/usuarios  BODY: { nome: 'string', email: 'string', senha: 'string', perfil: number(0,1) }",
-  SUBSTITUIR_USUARIOS:
-    "PUT /api/usuarios/:id  BODY: { nome: 'string', email: 'string', senha: 'string', perfil: number(0,1) }",
-  ATUALIZAR_USUARIOS:
-    "PATCH /api/usuarios/:id  BODY: { nome: 'string', email: 'string', senha: 'string', perfil: number(0,1) }",
-  DELETAR_USUARIOS: "DELETE /api/usuarios/:id",
-};
+app.use(cookieParser());
 
-const ingredientesRoute = {
-  LISTAR_INGREDIENTES: "GET /api/ingredientes",
-  MOSTRAR_INGREDIENTES: "GET /api/ingredientes/:id",
-  CRIAR_INGREDIENTES:
-    "POST /api/ingredientes  BODY: { nome: 'string', preco: number, metrica: 'metrica_enum', usuario_id: number }",
-  SUBSTITUIR_INGREDIENTES:
-    "PUT /api/ingredientes/:id  BODY: { nome: 'string', preco: number, metrica: 'metrica_enum', usuario_id: number }",
-  ATUALIZAR_INGREDIENTES:
-    "PATCH /api/ingredientes/:id  BODY: { nome: 'string', preco: number, metrica: 'metrica_enum', usuario_id: number }",
-  DELETAR_INGREDIENTES: "DELETE /api/ingredientes/:id",
-};
+app.use(cors({ origin: true, credentials: true }));
 
-const receitasRoute = {
-  LISTAR_RECEITAS: "GET /api/receitas",
-  MOSTRAR_RECEITAS: "GET /api/receitas/:id",
-  CRIAR_RECEITAS:
-    "POST /api/receitas  BODY: { nome: 'string', descricao?: 'string', usuario_id: number, imagem_url?: 'string', preco: number }",
-  SUBSTITUIR_RECEITAS:
-    "PUT /api/receitas/:id  BODY: {  nome: 'string', descricao?: 'string', usuario_id: number, imagem_url?: 'string', preco: number }",
-  ATUALIZAR_RECEITAS:
-    "PATCH /api/receitas/:id  BODY: {  nome: 'string', descricao?: 'string', usuario_id: number, imagem_url?: 'string', preco: number }",
-  DELETAR_RECEITAS: "DELETE /api/receitas/:id",
-};
+app.use("/api", globalLimiter);
+
+app.use("/api/usuarios/login", authLimiter);
+app.use("/api/usuarios/register", authLimiter);
+app.use("/api/usuarios/refresh", authLimiter);
+
+app.use('/uploads', express.static('./uploads'));
 
 app.get("/", (_req, res) => {
-  res.json({
-    USUARIOS: usuariosRoute,
-    INGREDIENTES: ingredientesRoute,
-    RECEITAS: receitasRoute,
-  });
+    res.json({
+        "status": "server online"
+    });
 });
 
 app.use("/api/usuarios", usuariosRouter);
-app.use("/api/ingredientes", ingredientesRouter);
-app.use("/api/receitas", receitasRouter);
+
+app.use("/api/chamados", authMiddleware, userLimiter, chamadosRouter);
+app.use("/api/receitas", authMiddleware, userLimiter, receitasRouter);
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em: http://localhost:${PORT}`);
-  console.log("Cors configurado para estado permissivo");
+
+const externalUrl = process.env.RENDER_EXTERNAL_URL;
+
+const server = app.listen(PORT, () => {
+    const baseUrl = externalUrl || `http://localhost:${PORT}`;
+    console.log(`Servidor rodando em ${baseUrl}`);
+    console.log("CORS configurado: permissivo (aceita qualquer origem).");
 });
+
+server.keepAliveTimeout = 120 * 1000;
+server.headersTimeout = 120 * 1000;
