@@ -2,7 +2,7 @@ import express from "express";
 import dotenv from "dotenv";             
 import cors from "cors";                 
 import cookieParser from "cookie-parser";
-import chamadosRouter from "./routes/ingredientes.routes.js";  
+import ingredientesRouter from "./routes/ingredientes.routes.js";  
 import receitasRouter from "./routes/receitas.routes.js";  
 import usuariosRouter from "./routes/usuarios.routes.js";  
 import { authMiddleware } from "./middlewares/auth.js";    
@@ -35,7 +35,7 @@ app.get("/", (_req, res) => {
 
 app.use("/api/usuarios", usuariosRouter);
 
-app.use("/api/chamados", authMiddleware, userLimiter, chamadosRouter);
+app.use("/api/ingredientes", authMiddleware, userLimiter, ingredientesRouter);
 app.use("/api/receitas", authMiddleware, userLimiter, receitasRouter);
 
 const PORT = process.env.PORT || 3000;
