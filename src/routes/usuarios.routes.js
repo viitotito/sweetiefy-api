@@ -21,7 +21,7 @@ const REFRESH_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 
 function signAccessToken(u) {
     return jwt.sign(
-        { sub: u.id, papel: u.papel, nome: u.nome },
+        { sub: u.id, perfil: u.perfil, nome: u.nome },
         JWT_ACCESS_SECRET,
         { expiresIn: JWT_ACCESS_EXPIRES }
     );
@@ -70,13 +70,13 @@ router.post("/register", async (req, res) => {
 
     try {
         const senha_hash = await bcrypt.hash(senha, 12);
-        const papel = 0;
+        const perfil = 0;
 
         const r = await pool.query(
-            `INSERT INTO "Usuarios" ("nome","email","senha_hash","papel")
+            `INSERT INTO "usuarios" ("nome","email","senha_hash","perfil")
              VALUES ($1,$2,$3,$4)
-             RETURNING "id","nome","email","papel"`,
-            [String(nome).trim(), String(email).trim().toLowerCase(), senha_hash, papel]
+             RETURNING "id","nome","email","perfil"`,
+            [String(nome).trim(), String(email).trim().toLowerCase(), senha_hash, perfil]
         );
 
         const user = r.rows[0];
@@ -93,7 +93,7 @@ router.post("/register", async (req, res) => {
                 id: user.id,
                 nome: user.nome,
                 email: user.email,
-                papel: user.papel,
+                perfil: user.perfil,
             },
         });
     } catch (err) {
@@ -121,8 +121,8 @@ router.post("/login", async (req, res) => {
 
     try {
         const r = await pool.query(
-            `SELECT "id","nome","email","senha_hash","papel"
-             FROM "Usuarios"
+            `SELECT "id","nome","email","senha_hash","perfil"
+             FROM "usuarios"
              WHERE "email" = $1`,
             [email]
         );
@@ -150,7 +150,7 @@ router.post("/login", async (req, res) => {
                 id: user.id,
                 nome: user.nome,
                 email: user.email,
-                papel: user.papel,
+                perfil: user.perfil,
             },
         });
     } catch (e) {
@@ -180,8 +180,8 @@ router.post("/refresh", async (req, res) => {
         }
 
         const r = await pool.query(
-            `SELECT "id","nome","email","papel"
-             FROM "Usuarios"
+            `SELECT "id","nome","email","perfil"
+             FROM "usuarios"
              WHERE "id" = $1`,
             [payload.sub]
         );
