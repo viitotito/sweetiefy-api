@@ -4,7 +4,6 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { writeFile, unlink } from "node:fs/promises";
-import { recaptchaMiddleware } from "../middlewares/recaptcha.js";
 
 const router = Router();
 
@@ -114,7 +113,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.post("/", upload.single("imagem"), recaptchaMiddleware, async (req, res) => {
+router.post("/", upload.single("imagem"), async (req, res) => {
   const auth = getAuthInfo(req, res);
   if (!auth) return;
   const { uid } = auth;
@@ -154,7 +153,7 @@ router.post("/", upload.single("imagem"), recaptchaMiddleware, async (req, res) 
   }
 });
 
-router.put("/:id", upload.single("imagem"), recaptchaMiddleware, async (req, res) => {
+router.put("/:id", upload.single("imagem"), async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) return res.status(400).json({ erro: "ID da receita inválido." });
 

@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { pool } from "../database/db.js";
-import { recaptchaMiddleware } from "../middlewares/recaptcha.js";
 
 const router = Router();
 
@@ -59,7 +58,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.post("/", recaptchaMiddleware, async (req, res) => {
+router.post("/", async (req, res) => {
   const auth = getAuthInfo(req, res);
   if (!auth) return;
   const { uid } = auth;
@@ -91,7 +90,7 @@ router.post("/", recaptchaMiddleware, async (req, res) => {
   }
 });
 
-router.put("/:id", recaptchaMiddleware, async (req, res) => {
+router.put("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) return res.status(400).json({ erro: "ID inválido." });
 
@@ -134,7 +133,7 @@ router.put("/:id", recaptchaMiddleware, async (req, res) => {
   }
 });
 
-router.patch("/:id", recaptchaMiddleware, async (req, res) => {
+router.patch("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) return res.status(400).json({ erro: "ID inválido." });
 
