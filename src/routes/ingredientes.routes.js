@@ -20,12 +20,14 @@ function getAuthInfo(req, res) {
 }
 
 async function obterIngredientePorId(id) {
+  console.log("ID recebido:", id);
   const { rows } = await pool.query(
     `SELECT id, nome, preco, metrica, usuario_id, data_criacao, data_atualizacao
      FROM ingredientes
      WHERE id = $1`,
     [id]
   );
+  console.log("Resultado da query:", rows);
   return rows[0] ?? null;
 }
 
@@ -46,7 +48,6 @@ router.get("/", async (_req, res) => {
 router.get("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) return res.status(400).json({ erro: "ID do ingrediente inválido." });
-
   try {
     const ingrediente = await obterIngredientePorId(id);
     if (!ingrediente) {
@@ -96,7 +97,6 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) return res.status(400).json({ erro: "ID do ingrediente inválido." });
-
   const auth = getAuthInfo(req, res);
   if (!auth) return;
   const { uid, isAdmin } = auth;
@@ -220,27 +220,31 @@ router.delete("/:id", async (req, res) => {
 
   const auth = getAuthInfo(req, res);
   if (!auth) return;
-
-  const { isAdmin } = auth;
-
-  if (!isAdmin) {
-    return res.status(403).json({ erro: "Somente administradores podem remover ingredientes." });
-  }
+  const { uid, isAdmin } = auth;
 
   try {
-    const result = await pool.query(
-      `DELETE FROM ingredientes WHERE id = $1 RETURNING id`,
-      [id]
-    );
-
-    if (!result.rowCount) {
+    const ingrediente = await obterIngredientePorId(id);
+    if (!ingrediente) {
       return res.status(404).json({ erro: "Ingrediente não encontrado." });
     }
 
+    // Regra: usuário comum só apaga o que é dele
+    if (!isAdmin && ingrediente.usuario_id !== uid) {
+      return res.status(403).json({ erro: "Você não tem permissão para excluir este ingrediente." });
+    }
+
+    await pool.query(
+      `DELETE FROM ingredientes WHERE id = $1`,
+      [id]
+    );
+
     res.status(204).end();
+
   } catch (e) {
     console.error("Erro ao deletar ingrediente:", e);
-    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível remover ingrediente (verifique fk)." });
+    res.status(500).json({
+      erro: "Erro interno do servidor. Não foi possível remover ingrediente."
+    });
   }
 });
 
