@@ -254,7 +254,6 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ erro: "Ingrediente não encontrado." });
     }
 
-    // Regra: usuário comum só apaga o que é dele
     if (!isAdmin && ingrediente.usuario_id !== uid) {
       return res.status(403).json({ erro: "Você não tem permissão para excluir este ingrediente." });
     }

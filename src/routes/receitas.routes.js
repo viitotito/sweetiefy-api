@@ -71,14 +71,28 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, 
 });
 
-router.get("/", async (_req, res) => {
+router.get("/", async (req, res) => {
+  const auth = getAuthInfo(req, res);
+  if (!auth) return;
+  const { uid, isAdmin } = auth;
+
   try {
-    const { rows } = await pool.query(
-      `SELECT id, nome, descricao, usuario_id, imagem_url, preco, data_criacao, data_atualizacao
-       FROM receitas
-       ORDER BY nome ASC`
-    );
+    let query = `
+      SELECT id, nome, descricao, usuario_id, imagem_url, preco, data_criacao, data_atualizacao
+      FROM receitas
+    `;
+    const params = [];
+
+    if (!isAdmin) {
+      query += ` WHERE usuario_id = $1`;
+      params.push(uid);
+    }
+
+    query += ` ORDER BY nome ASC`;
+
+    const { rows } = await pool.query(query, params);
     res.json(rows);
+
   } catch (e) {
     console.error("Erro ao listar receitas (GET):", e);
     res.status(500).json({ erro: "Erro interno do servidor. Não foi possível listar receitas." });
@@ -89,9 +103,17 @@ router.get("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) return res.status(400).json({ erro: "ID da receita inválido." });
 
+  const auth = getAuthInfo(req, res);
+  if (!auth) return;
+  const { uid, isAdmin } = auth;
+
   try {
     const receita = await obterReceitaPorId(id);
     if (!receita) return res.status(404).json({ erro: "Receita não encontrada." });
+
+    if (!isAdmin && receita.usuario_id !== uid) {
+      return res.status(404).json({ erro: "Receita não encontrada." });
+    }
 
     const ingredientesResult = await pool.query(
       `SELECT ri.quantidade,
