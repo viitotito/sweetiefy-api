@@ -360,14 +360,17 @@ router.delete("/:id", async (req, res) => {
 
   const auth = getAuthInfo(req, res);
   if (!auth) return;
-  const { isAdmin } = auth;
+
+  const { uid, isAdmin } = auth;
 
   try {
     const receita = await obterReceitaPorId(id);
-    if (!receita) return res.status(404).json({ erro: "Receita não encontrada." });
+    if (!receita) {
+      return res.status(404).json({ erro: "Receita não encontrada." });
+    }
 
-    if (!isAdmin) {
-      return res.status(403).json({ erro: "Somente administradores podem remover receitas." });
+    if (!isAdmin && receita.usuario_id !== uid) {
+      return res.status(403).json({ erro: "Você não tem permissão para excluir esta receita." });
     }
 
     await pool.query(`DELETE FROM receitas WHERE id = $1`, [id]);
@@ -377,9 +380,10 @@ router.delete("/:id", async (req, res) => {
     }
 
     res.status(204).end();
+
   } catch (e) {
     console.error("Erro ao deletar receita:", e);
-    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível deletar receita (verifique fk)." });
+    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível deletar a receita." });
   }
 });
 
