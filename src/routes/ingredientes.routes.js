@@ -31,33 +31,59 @@ async function obterIngredientePorId(id) {
   return rows[0] ?? null;
 }
 
-router.get("/", async (_req, res) => {
+router.get("/", async (req, res) => {
+  const auth = getAuthInfo(req, res);
+  if (!auth) return;
+  const { uid, isAdmin } = auth;
+
   try {
-    const { rows } = await pool.query(
-      `SELECT id, nome, preco, metrica, usuario_id, data_criacao, data_atualizacao
-       FROM ingredientes
-       ORDER BY nome ASC`
-    );
+    let query = `
+      SELECT id, nome, preco, metrica, usuario_id, data_criacao, data_atualizacao
+      FROM ingredientes
+    `;
+
+    const params = [];
+
+    if (!isAdmin) {
+      query += ` WHERE usuario_id = $1`;
+      params.push(uid);
+    }
+
+    query += ` ORDER BY nome ASC`;
+
+    const { rows } = await pool.query(query, params);
     res.json(rows);
+
   } catch (e) {
-    console.error("Erro ao listar ingredientes (GET):", e);
-    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível listar ingredientes." });
+    console.error("Erro ao listar ingredientes:", e);
+    res.status(500).json({ erro: "Erro ao listar ingredientes." });
   }
 });
 
 router.get("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
-  if (!id) return res.status(400).json({ erro: "ID do ingrediente inválido." });
+  if (!id) return res.status(400).json({ erro: "ID inválido." });
+
+  const auth = getAuthInfo(req, res);
+  if (!auth) return;
+  const { uid, isAdmin } = auth;
+
   try {
     const ingrediente = await obterIngredientePorId(id);
+
     if (!ingrediente) {
       return res.status(404).json({ erro: "Ingrediente não encontrado." });
     }
 
+    if (!isAdmin && ingrediente.usuario_id !== uid) {
+      return res.status(404).json({ erro: "Ingrediente não encontrado." });
+    }
+
     res.json(ingrediente);
+
   } catch (e) {
-    console.error("Erro ao buscar ingrediente (GET:id):", e);
-    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível buscar ingrediente." });
+    console.error("Erro ao buscar ingrediente:", e);
+    res.status(500).json({ erro: "Erro ao buscar ingrediente." });
   }
 });
 
