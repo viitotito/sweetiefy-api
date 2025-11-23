@@ -17,7 +17,7 @@ export function authMiddleware(req, res, next) {
 
         const payload = jwt.verify(token, JWT_ACCESS_SECRET);
 
-        req.user = { id: payload.sub, papel: payload.papel, nome: payload.nome };
+        req.user = { id: payload.sub, perfil: payload.perfil, nome: payload.nome };
 
         next();
     } catch {

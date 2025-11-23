@@ -49,7 +49,7 @@ async function removerArquivoPorUrl(url_imagem) {
 
 function getAuthInfo(req, res) {
   const uid = req.user?.id;
-  const isAdmin = req.user?.papel === 1;
+  const isAdmin = req.user?.perfil === 1;
   if (!uid) {
     res.status(401).json({ erro: "Usuário não autenticado." });
     return null;

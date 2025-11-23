@@ -10,12 +10,13 @@ function parseIdParam(param) {
 
 function getAuthInfo(req, res) {
   const uid = req.user?.id;
-  const isAdmin = req.user?.papel === 1;
+  const isAdmin = Number(req.user?.perfil) === 1;
 
   if (!uid) {
     res.status(401).json({ erro: "Usuário não autenticado." });
     return null;
   }
+
   return { uid, isAdmin };
 }
 

@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS receitas_ingredientes (
 
 INSERT INTO usuarios (nome, email, senha_hash, perfil)
 VALUES
-('User', 'user@user.com', '$2a$10$abcdef...', 0),
-('Admin', 'admin@admin.com', '$2a$10$ghijkl...', 1);
+('User', 'user@user.com', '$2b$12$lrXlY35ejtBPrlRJ5jNwp.jVXu6iI17FwbF0/0L7wfPc318jkQed6', 0),
+('Admin', 'admin@admin.com', '$2b$12$nOa5SugTSkw5pP0RzSJHN.4B81W12o3d46D.e09NDXzTyJ5nMWtkK', 1);
 
 INSERT INTO ingredientes (nome, preco, metrica, usuario_id)
 VALUES
