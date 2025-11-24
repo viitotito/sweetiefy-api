@@ -4,8 +4,10 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { writeFile, unlink } from "node:fs/promises";
+import { authMiddleware } from "../middlewares/auth.js"; // ajuste o path conforme seu projeto
 
 const router = Router();
+router.use(authMiddleware); // aplica autenticação a todas as rotas
 
 const uploadDir = path.resolve("uploads");
 fs.mkdirSync(uploadDir, { recursive: true });
@@ -27,34 +29,20 @@ function montarUrlCompleta(req, filename) {
 
 async function salvarUploadEmDisco(req, file) {
   if (!file) return null;
-
   const filename = gerarNomeArquivo(file.originalname);
   const filePath = path.join(uploadDir, filename);
-
   await writeFile(filePath, file.buffer);
   return montarUrlCompleta(req, filename);
 }
 
 async function removerArquivoPorUrl(url_imagem) {
   if (!url_imagem) return;
-
   try {
-    const { pathname } = new URL(url_imagem); 
+    const { pathname } = new URL(url_imagem);
     const filename = path.basename(pathname);
     const filePath = path.join(uploadDir, filename);
     await unlink(filePath);
-  } catch {
-  }
-}
-
-function getAuthInfo(req, res) {
-  const uid = req.user?.id;
-  const isAdmin = req.user?.perfil === 1;
-  if (!uid) {
-    res.status(401).json({ erro: "Usuário não autenticado." });
-    return null;
-  }
-  return { uid, isAdmin };
+  } catch {}
 }
 
 async function obterReceitaPorId(id) {
@@ -68,19 +56,14 @@ async function obterReceitaPorId(id) {
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, 
+  limits: { fileSize: 5 * 1024 * 1024 },
 });
 
+// LISTAR RECEITAS
 router.get("/", async (req, res) => {
-  const auth = getAuthInfo(req, res);
-  if (!auth) return;
-  const { uid, isAdmin } = auth;
-
+  const { id: uid, isAdmin } = req.user;
   try {
-    let query = `
-      SELECT id, nome, descricao, usuario_id, imagem_url, preco, data_criacao, data_atualizacao
-      FROM receitas
-    `;
+    let query = `SELECT id, nome, descricao, usuario_id, imagem_url, preco, data_criacao, data_atualizacao FROM receitas`;
     const params = [];
 
     if (!isAdmin) {
@@ -89,31 +72,25 @@ router.get("/", async (req, res) => {
     }
 
     query += ` ORDER BY nome ASC`;
-
     const { rows } = await pool.query(query, params);
     res.json(rows);
-
   } catch (e) {
-    console.error("Erro ao listar receitas (GET):", e);
-    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível listar receitas." });
+    console.error("Erro ao listar receitas:", e);
+    res.status(500).json({ erro: "Erro interno do servidor." });
   }
 });
 
+// OBTER RECEITA POR ID
 router.get("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
-  if (!id) return res.status(400).json({ erro: "ID da receita inválido." });
+  if (!id) return res.status(400).json({ erro: "ID inválido." });
 
-  const auth = getAuthInfo(req, res);
-  if (!auth) return;
-  const { uid, isAdmin } = auth;
+  const { id: uid, isAdmin } = req.user;
 
   try {
     const receita = await obterReceitaPorId(id);
     if (!receita) return res.status(404).json({ erro: "Receita não encontrada." });
-
-    if (!isAdmin && receita.usuario_id !== uid) {
-      return res.status(404).json({ erro: "Receita não encontrada." });
-    }
+    if (!isAdmin && receita.usuario_id !== uid) return res.status(404).json({ erro: "Receita não encontrada." });
 
     const ingredientesResult = await pool.query(
       `SELECT ri.quantidade,
@@ -126,323 +103,109 @@ router.get("/:id", async (req, res) => {
        WHERE ri.receita_id = $1`,
       [id]
     );
-
     receita.ingredientes = ingredientesResult.rows;
     res.json(receita);
   } catch (e) {
-    console.error("Erro ao buscar receita e ingredientes (GET:id):", e);
-    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível buscar receita." });
+    console.error("Erro ao buscar receita:", e);
+    res.status(500).json({ erro: "Erro interno do servidor." });
   }
 });
 
+// CRIAR RECEITA
 router.post("/", upload.single("imagem"), async (req, res) => {
-  const auth = getAuthInfo(req, res);
-  if (!auth) return;
-  const { uid } = auth;
-
+  const { id: uid } = req.user;
   const { nome, descricao, preco } = req.body ?? {};
 
-  const temNomeValido = typeof nome === "string" && nome.trim().length > 0;
-  const precoNum = preco !== undefined ? Number(preco) : NaN;
-  const temPrecoValido = typeof precoNum === "number" && !Number.isNaN(precoNum) && precoNum >= 0;
-
-  if (!temNomeValido || !temPrecoValido) {
-    return res.status(400).json({
-      erro: "Campos obrigatórios: nome (string não vazia) e preco (número >= 0).",
-    });
+  if (!nome || nome.trim() === "" || preco === undefined || preco < 0) {
+    return res.status(400).json({ erro: "Campos inválidos: nome e preco." });
   }
 
   let imagemUrl = null;
   try {
-    if (req.file) {
-      imagemUrl = await salvarUploadEmDisco(req, req.file);
-    }
+    if (req.file) imagemUrl = await salvarUploadEmDisco(req, req.file);
 
     const { rows } = await pool.query(
       `INSERT INTO receitas (nome, descricao, usuario_id, imagem_url, preco)
        VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, nome, descricao, usuario_id, imagem_url, preco, data_criacao, data_atualizacao`,
-      [nome.trim(), descricao?.trim() ?? null, uid, imagemUrl, precoNum]
+       RETURNING *`,
+      [nome.trim(), descricao?.trim() ?? null, uid, imagemUrl, Number(preco)]
     );
 
     res.status(201).json(rows[0]);
   } catch (e) {
-    console.error("Erro ao criar receita (POST):", e);
-    if (imagemUrl) {
-      await removerArquivoPorUrl(imagemUrl);
-    }
-    res.status(500).json({ erro: "Erro ao criar receita. Verifique se os campos são válidos." });
+    console.error("Erro ao criar receita:", e);
+    if (imagemUrl) await removerArquivoPorUrl(imagemUrl);
+    res.status(500).json({ erro: "Erro interno do servidor." });
   }
 });
 
-router.put("/:id", upload.single("imagem"), async (req, res) => {
-  const id = parseIdParam(req.params.id);
-  if (!id) return res.status(400).json({ erro: "ID da receita inválido." });
-
-  const auth = getAuthInfo(req, res);
-  if (!auth) return;
-  const { uid, isAdmin } = auth;
-
-  const { nome, descricao, preco } = req.body ?? {};
-  const temNomeValido = typeof nome === "string" && nome.trim().length > 0;
-  const precoNum = preco !== undefined ? Number(preco) : NaN;
-  const temPrecoValido = typeof precoNum === "number" && !Number.isNaN(precoNum) && precoNum >= 0;
-
-  if (!temNomeValido || !temPrecoValido) {
-    return res.status(400).json({
-      erro: "Para PUT, envie nome (string não vazia) e preco (número >= 0).",
-    });
-  }
-
-  let imagemNovaUrl = null;
-  let imagemAntigaUrl = null;
-
-  try {
-    const receita = await obterReceitaPorId(id);
-    if (!receita) return res.status(404).json({ erro: "Receita não encontrada." });
-
-    if (!isAdmin && receita.usuario_id !== uid) {
-      return res.status(404).json({ erro: "Receita não encontrada." }); // não revelar existência
-    }
-
-    imagemAntigaUrl = receita.imagem_url ?? null;
-
-    if (req.file) {
-      imagemNovaUrl = await salvarUploadEmDisco(req, req.file);
-    } else {
-      imagemNovaUrl = imagemAntigaUrl; 
-    }
-
-    const { rows } = await pool.query(
-      `UPDATE receitas
-       SET nome = $1,
-           descricao = $2,
-           usuario_id = $3,
-           imagem_url = $4,
-           preco = $5,
-           data_atualizacao = now()
-       WHERE id = $6
-       RETURNING id, nome, descricao, usuario_id, imagem_url, preco, data_atualizacao`,
-      [nome.trim(), descricao?.trim() ?? null, receita.usuario_id, imagemNovaUrl, precoNum, id]
-    );
-
-    if (!rows[0]) {
-      if (req.file && imagemNovaUrl) await removerArquivoPorUrl(imagemNovaUrl);
-      return res.status(404).json({ erro: "Receita não encontrada." });
-    }
-
-    if (req.file && imagemAntigaUrl && imagemAntigaUrl !== imagemNovaUrl) {
-      await removerArquivoPorUrl(imagemAntigaUrl);
-    }
-
-    res.json(rows[0]);
-  } catch (e) {
-    console.error("Erro ao atualizar receita (PUT):", e);
-    if (req.file && imagemNovaUrl) await removerArquivoPorUrl(imagemNovaUrl);
-    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível atualizar receita." });
-  }
-});
-
-router.patch("/:id", upload.single("imagem"), async (req, res) => {
-  const id = parseIdParam(req.params.id);
-  if (!id) return res.status(400).json({ erro: "ID da receita inválido." });
-
-  const auth = getAuthInfo(req, res);
-  if (!auth) return;
-  const { uid, isAdmin } = auth;
-
-  const body = req.body ?? {};
-  const { nome, descricao, usuario_id, imagem_url, preco } = body;
-
-  const querAtualizarNome = nome !== undefined;
-  const querAtualizarPreco = preco !== undefined;
-  const querAtualizarUsuarioId = usuario_id !== undefined;
-  const querAtualizarImagem = !!req.file || imagem_url === null;
-
-  if (!querAtualizarNome && !querAtualizarPreco && !querAtualizarUsuarioId && !querAtualizarImagem && descricao === undefined) {
-    return res.status(400).json({ erro: "Envie ao menos um campo para atualizar." });
-  }
-
-  let novoNome;
-  if (querAtualizarNome) {
-    if (typeof nome !== "string" || nome.trim() === "") {
-      return res.status(400).json({ erro: "Campo 'nome' deve ser string não vazia." });
-    }
-    novoNome = nome.trim();
-  }
-
-  let novoPreco;
-  if (querAtualizarPreco) {
-    const pnum = Number(preco);
-    if (typeof preco !== "number" || Number.isNaN(pnum) || pnum < 0) {
-      return res.status(400).json({ erro: "Campo 'preco' deve ser um número não negativo." });
-    }
-    novoPreco = pnum;
-  }
-
-  if (usuario_id !== undefined) {
-    const uidCandidate = Number(usuario_id);
-    if (!Number.isInteger(uidCandidate) || uidCandidate <= 0) {
-      return res.status(400).json({ erro: "Campo 'usuario_id' deve ser inteiro > 0." });
-    }
-    if (!isAdmin) {
-      return res.status(403).json({ erro: "Somente administradores podem alterar o usuário dono da receita." });
-    }
-  }
-
-  if (imagem_url !== undefined && imagem_url !== null && imagem_url !== "null") {
-    return res.status(400).json({
-      erro: "Para alterar imagem via PATCH, envie um arquivo em 'imagem' ou imagem_url = null para remover.",
-    });
-  }
-
-  let imagemAntigaUrl = null;
-  let imagemNovaUrl = null;
-  let criouNovaImagem = false;
-
-  try {
-    const receita = await obterReceitaPorId(id);
-    if (!receita) return res.status(404).json({ erro: "Receita não encontrada." });
-
-    if (!isAdmin && receita.usuario_id !== uid) {
-      return res.status(404).json({ erro: "Receita não encontrada." });
-    }
-
-    imagemAntigaUrl = receita.imagem_url ?? null;
-
-    if (req.file) {
-      imagemNovaUrl = await salvarUploadEmDisco(req, req.file);
-      criouNovaImagem = true;
-    } else if (imagem_url === null) {
-      imagemNovaUrl = null; 
-    } else {
-      imagemNovaUrl = imagemAntigaUrl;
-    }
-
-    const textoFinal = novoNome !== undefined ? novoNome : receita.nome;
-    const precoFinal = novoPreco !== undefined ? novoPreco : receita.preco;
-    const descricaoFinal = descricao !== undefined ? (typeof descricao === "string" ? descricao.trim() : null) : receita.descricao;
-    const usuarioIdFinal = usuario_id !== undefined ? Number(usuario_id) : receita.usuario_id;
-
-    const { rows } = await pool.query(
-      `UPDATE receitas
-       SET nome = $1,
-           descricao = $2,
-           usuario_id = $3,
-           imagem_url = $4,
-           preco = $5,
-           data_atualizacao = now()
-       WHERE id = $6
-       RETURNING id, nome, descricao, usuario_id, imagem_url, preco, data_atualizacao`,
-      [textoFinal, descricaoFinal, usuarioIdFinal, imagemNovaUrl, precoFinal, id]
-    );
-
-    if (!rows[0]) {
-      if (criouNovaImagem && imagemNovaUrl) await removerArquivoPorUrl(imagemNovaUrl);
-      return res.status(404).json({ erro: "Receita não encontrada." });
-    }
-
-    if (imagemAntigaUrl && imagemAntigaUrl !== imagemNovaUrl) {
-      await removerArquivoPorUrl(imagemAntigaUrl);
-    }
-
-    res.json(rows[0]);
-  } catch (e) {
-    console.error("Erro ao atualizar receita (PATCH):", e);
-    if (criouNovaImagem && imagemNovaUrl) await removerArquivoPorUrl(imagemNovaUrl);
-    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível atualizar parcialmente a receita." });
-  }
-});
-
+// DELETAR RECEITA (com remoção de ingredientes em cascata)
 router.delete("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
-  if (!id) return res.status(400).json({ erro: "ID da receita inválido." });
+  if (!id) return res.status(400).json({ erro: "ID inválido." });
 
-  const auth = getAuthInfo(req, res);
-  if (!auth) return;
-
-  const { uid, isAdmin } = auth;
+  const { id: uid, isAdmin } = req.user;
 
   try {
     const receita = await obterReceitaPorId(id);
-    if (!receita) {
-      return res.status(404).json({ erro: "Receita não encontrada." });
-    }
+    if (!receita) return res.status(404).json({ erro: "Receita não encontrada." });
+    if (!isAdmin && receita.usuario_id !== uid) return res.status(403).json({ erro: "Sem permissão." });
 
-    if (!isAdmin && receita.usuario_id !== uid) {
-      return res.status(403).json({ erro: "Você não tem permissão para excluir esta receita." });
-    }
+    // Deletar ingredientes associados
+    await pool.query(`DELETE FROM receitas_ingredientes WHERE receita_id=$1`, [id]);
 
-    await pool.query(`DELETE FROM receitas WHERE id = $1`, [id]);
+    // Deletar receita
+    await pool.query(`DELETE FROM receitas WHERE id=$1`, [id]);
 
-    if (receita.imagem_url) {
-      await removerArquivoPorUrl(receita.imagem_url);
-    }
+    // Remover imagem
+    if (receita.imagem_url) await removerArquivoPorUrl(receita.imagem_url);
 
-    res.status(204).end();
-
+    res.status(200).json({ message: "Receita e ingredientes deletados com sucesso." });
   } catch (e) {
     console.error("Erro ao deletar receita:", e);
-    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível deletar a receita." });
+    res.status(500).json({ erro: "Erro interno do servidor." });
   }
 });
 
+// ADICIONAR INGREDIENTE À RECEITA
 router.post("/:receitaId/ingredientes", async (req, res) => {
-  const id = parseIdParam(req.params.receitaId);
+  const receita_id = parseIdParam(req.params.receitaId);
   const { ingrediente_id, quantidade } = req.body ?? {};
-
   const iid = Number(ingrediente_id);
   const qtd = Number(quantidade);
-  const temIidValido = Number.isInteger(iid) && iid > 0;
-  const temQuantidadeValida = Number.isInteger(qtd) && qtd >= 0;
 
-  if (!id || !temIidValido || !temQuantidadeValida) {
-    return res.status(400).json({
-      erro: "Campos obrigatórios: receitaId (path), ingrediente_id (number > 0) e quantidade (number >= 0).",
-    });
-  }
+  if (!receita_id || !iid || qtd < 0) return res.status(400).json({ erro: "Campos inválidos." });
 
   try {
     const { rows } = await pool.query(
       `INSERT INTO receitas_ingredientes (receita_id, ingrediente_id, quantidade)
-       VALUES ($1, $2, $3)
-       RETURNING id, receita_id, ingrediente_id, quantidade`,
-      [id, iid, qtd]
+       VALUES ($1, $2, $3) RETURNING *`,
+      [receita_id, iid, qtd]
     );
     res.status(201).json(rows[0]);
   } catch (e) {
-    if (e.code === "23503") {
-      return res.status(404).json({ erro: "Receita ou Ingrediente não existe." });
-    }
-    console.error("Erro ao adicionar ingrediente à receita:", e);
-    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível adicionar ingrediente à receita." });
+    console.error("Erro ao adicionar ingrediente:", e);
+    res.status(500).json({ erro: "Erro interno do servidor." });
   }
 });
 
+// REMOVER INGREDIENTE DA RECEITA
 router.delete("/:receitaId/ingredientes/:ingredienteId", async (req, res) => {
   const receita_id = parseIdParam(req.params.receitaId);
   const ingrediente_id = parseIdParam(req.params.ingredienteId);
 
-  if (!receita_id || !ingrediente_id) {
-    return res.status(400).json({ erro: "IDs de Receita ou Ingrediente inválidos." });
-  }
+  if (!receita_id || !ingrediente_id) return res.status(400).json({ erro: "IDs inválidos." });
 
   try {
     const r = await pool.query(
-      `DELETE FROM receitas_ingredientes
-       WHERE receita_id = $1 AND ingrediente_id = $2
-       RETURNING id`,
+      `DELETE FROM receitas_ingredientes WHERE receita_id=$1 AND ingrediente_id=$2 RETURNING id`,
       [receita_id, ingrediente_id]
     );
-
-    if (!r.rowCount) {
-      return res.status(404).json({ erro: "Associação (ingrediente na receita) não encontrada." });
-    }
-
+    if (!r.rowCount) return res.status(404).json({ erro: "Associação não encontrada." });
     res.status(204).end();
   } catch (e) {
-    console.error("Erro ao remover ingrediente da receita:", e);
-    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível remover ingrediente da receita." });
+    console.error("Erro ao remover ingrediente:", e);
+    res.status(500).json({ erro: "Erro interno do servidor." });
   }
 });
 
