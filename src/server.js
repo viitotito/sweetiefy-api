@@ -18,7 +18,6 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use(cors({ origin: true, credentials: true }));
-
 app.use("/api", globalLimiter);
 
 app.use("/api/usuarios/login", authLimiter);
