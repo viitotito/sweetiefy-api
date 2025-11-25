@@ -43,12 +43,12 @@ function signRefreshToken(u) {
     );
 }
 
-function cookieOpts(req) {
+function cookieOpts() {
     return {
         httpOnly: true,
-        sameSite: "Lax",
-        secure: isProduction,
-        path: req.baseUrl || "/",
+        secure: isProduction,  
+        sameSite: isProduction ? "none" : "lax", 
+        path: "/",      
         maxAge: REFRESH_MAX_AGE,
     };
 }

@@ -1,15 +1,15 @@
-import express from "express";           
-import dotenv from "dotenv";             
-import cors from "cors";                 
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
 import cookieParser from "cookie-parser";
-import ingredientesRouter from "./routes/ingredientes.routes.js";  
-import receitasRouter from "./routes/receitas.routes.js";  
-import usuariosRouter from "./routes/usuarios.routes.js";  
-import { authMiddleware } from "./middlewares/auth.js";    
+import ingredientesRouter from "./routes/ingredientes.routes.js";
+import receitasRouter from "./routes/receitas.routes.js";
+import usuariosRouter from "./routes/usuarios.routes.js";
+import { authMiddleware } from "./middlewares/auth.js";
 import { globalLimiter, authLimiter, userLimiter } from "./middlewares/rateLimiters.js";
 
-dotenv.config();                         
-const app = express();                   
+dotenv.config();
+const app = express();
 
 app.set("trust proxy", 1);
 
@@ -17,8 +17,19 @@ app.use(express.json());
 
 app.use(cookieParser());
 
-app.use(cors({ origin: true, credentials: true }));
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://sweetiefy-frontend.onrender.com",
+];
+
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true,
+}));
+
 app.use("/api", globalLimiter);
+
 
 app.use("/api/usuarios/login", authLimiter);
 app.use("/api/usuarios/register", authLimiter);
@@ -32,7 +43,9 @@ app.get("/", (_req, res) => {
     });
 });
 
-app.use("/api/usuarios", userLimiter,usuariosRouter);
+app.get("/health", (req, res) => res.json({ status: "ok" }));
+
+app.use("/api/usuarios", userLimiter, usuariosRouter);
 
 app.use("/api/ingredientes", authMiddleware, userLimiter, ingredientesRouter);
 app.use("/api/receitas", authMiddleware, userLimiter, receitasRouter);
