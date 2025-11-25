@@ -4,11 +4,14 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { writeFile, unlink } from "node:fs/promises";
-import { authMiddleware } from "../middlewares/auth.js"; // ajuste o path conforme seu projeto
+import { authMiddleware } from "../middlewares/auth.js"; 
 
 const router = Router();
-router.use(authMiddleware); // aplica autenticação a todas as rotas
-
+router.use(authMiddleware); 
+router.use((req, res, next) => {
+  console.log("Usuário autenticado:", req.user);
+  next();
+});
 const uploadDir = path.resolve("uploads");
 fs.mkdirSync(uploadDir, { recursive: true });
 
@@ -61,7 +64,8 @@ const upload = multer({
 
 // LISTAR RECEITAS
 router.get("/", async (req, res) => {
-  const { id: uid, isAdmin } = req.user;
+  const uid = req.user.id;
+  const isAdmin = Number(req.user.perfil) === 1; // 1 = Admin
   try {
     let query = `SELECT id, nome, descricao, usuario_id, imagem_url, preco, data_criacao, data_atualizacao FROM receitas`;
     const params = [];
@@ -85,7 +89,8 @@ router.get("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) return res.status(400).json({ erro: "ID inválido." });
 
-  const { id: uid, isAdmin } = req.user;
+  const uid = req.user.id;
+  const isAdmin = Number(req.user.perfil) === 1; // 1 = Admin
 
   try {
     const receita = await obterReceitaPorId(id);
@@ -113,7 +118,7 @@ router.get("/:id", async (req, res) => {
 
 // CRIAR RECEITA
 router.post("/", upload.single("imagem"), async (req, res) => {
-  const { id: uid } = req.user;
+  const uid = req.user.id;
   const { nome, descricao, preco } = req.body ?? {};
 
   if (!nome || nome.trim() === "" || preco === undefined || preco < 0) {
@@ -139,12 +144,13 @@ router.post("/", upload.single("imagem"), async (req, res) => {
   }
 });
 
-// DELETAR RECEITA (com remoção de ingredientes em cascata)
+// DELETAR RECEITA
 router.delete("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) return res.status(400).json({ erro: "ID inválido." });
 
-  const { id: uid, isAdmin } = req.user;
+  const uid = req.user.id;
+  const isAdmin = Number(req.user.perfil) === 1; // 1 = Admin
 
   try {
     const receita = await obterReceitaPorId(id);
@@ -166,6 +172,7 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ erro: "Erro interno do servidor." });
   }
 });
+
 
 // ADICIONAR INGREDIENTE À RECEITA
 router.post("/:receitaId/ingredientes", async (req, res) => {
