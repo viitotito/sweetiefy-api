@@ -21,7 +21,7 @@ const allowedOrigins = [
     "http://localhost:4173",
     "http://localhost:5173",
     "http://localhost:3000",
-    "https://sweetiefy-frontend.onrender.com",
+    "https://sweetiefy.vercel.app",
 ];
 
 app.use(cors({
