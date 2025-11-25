@@ -176,11 +176,9 @@ router.patch("/:id", upload.single("imagem"), async (req, res) => {
 
   for (const ing of ingredientes) {
     if (!ing.id || !ing.quantidade || ing.quantidade <= 0) {
-      return res
-        .status(400)
-        .json({
-          erro: "Todos os ingredientes devem ter id válido e quantidade > 0.",
-        });
+      return res.status(400).json({
+        erro: "Todos os ingredientes devem ter id válido e quantidade > 0.",
+      });
     }
   }
 
@@ -200,7 +198,7 @@ router.patch("/:id", upload.single("imagem"), async (req, res) => {
     );
 
     if (req.file) {
-      const imagemUrl = await salvarUploadEmDisco(req.file);
+      const imagemUrl = await salvarUploadEmDisco(req, req.file);
 
       if (receitaExistente.imagem_url)
         await removerArquivoPorUrl(receitaExistente.imagem_url);
@@ -276,11 +274,9 @@ router.post("/", upload.single("imagem"), async (req, res) => {
   let imagemUrl = null;
 
   try {
-    if (req.file)
-      imagemUrl = await salvarUploadEmDisco(
-        req.file ? req.file : null,
-        req.file
-      );
+    if (req.file) {
+      imagemUrl = await salvarUploadEmDisco(req, req.file);
+    }
 
     const { rows } = await pool.query(
       `INSERT INTO receitas (nome, descricao, usuario_id, imagem_url, preco)
