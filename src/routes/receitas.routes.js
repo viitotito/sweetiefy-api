@@ -42,7 +42,7 @@ async function removerArquivoPorUrl(url_imagem) {
     const filename = path.basename(pathname);
     const filePath = path.join(uploadDir, filename);
     await unlink(filePath);
-  } catch {}
+  } catch { }
 }
 
 async function obterReceitaPorId(id) {
@@ -168,6 +168,9 @@ router.patch("/:id", upload.single("imagem"), async (req, res) => {
     return res.status(400).json({ erro: "Campos inválidos: nome e preco." });
   }
 
+  if (preco >= 1000) {
+    return res.status(422).json({ erro: "Campo preço dever ser menor que 1000." });
+  }
   if (!Array.isArray(ingredientes) || ingredientes.length === 0) {
     return res
       .status(400)
@@ -254,7 +257,9 @@ router.post("/", upload.single("imagem"), async (req, res) => {
   if (!nome || nome.trim() === "" || preco === undefined || preco < 0) {
     return res.status(400).json({ erro: "Campos inválidos: nome e preco." });
   }
-
+  if (preco >= 1000) {
+    return res.status(422).json({ erro: "Campo preço dever ser menor que 1000." });
+  }
   if (!Array.isArray(ingredientes) || ingredientes.length === 0) {
     return res
       .status(400)

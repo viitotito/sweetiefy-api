@@ -13,7 +13,7 @@ function getAuthInfo(req, res) {
   const isAdmin = Number(req.user?.perfil) === 1;
 
   if (!uid) {
-    res.status(401).json({ erro: "Usuário não autenticado." });
+    res.status(401).json({ erro: "Usuário não está autenticado." });
     return null;
   }
 
@@ -56,14 +56,14 @@ router.get("/", async (req, res) => {
     res.json(rows);
 
   } catch (e) {
-    console.error("Erro ao listar ingredientes:", e);
-    res.status(500).json({ erro: "Erro ao listar ingredientes." });
+    console.error("Erro ao listar ingredientes (GET):", e);
+    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível listar ingredientes" });
   }
 });
 
 router.get("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
-  if (!id) return res.status(400).json({ erro: "ID inválido." });
+  if (!id) return res.status(400).json({ erro: "ID de ingrediente inválido." });
 
   const auth = getAuthInfo(req, res);
   if (!auth) return;
@@ -72,19 +72,15 @@ router.get("/:id", async (req, res) => {
   try {
     const ingrediente = await obterIngredientePorId(id);
 
-    if (!ingrediente) {
-      return res.status(404).json({ erro: "Ingrediente não encontrado." });
-    }
-
-    if (!isAdmin && ingrediente.usuario_id !== uid) {
+    if (!ingrediente || (!isAdmin && ingrediente.usuario_id !== uid)) {
       return res.status(404).json({ erro: "Ingrediente não encontrado." });
     }
 
     res.json(ingrediente);
 
   } catch (e) {
-    console.error("Erro ao buscar ingrediente:", e);
-    res.status(500).json({ erro: "Erro ao buscar ingrediente." });
+    console.error("Erro ao buscar ingrediente (GET/:id):", e);
+    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível encontrar ingrediente." });
   }
 });
 
@@ -102,7 +98,15 @@ router.post("/", async (req, res) => {
 
   if (!temNome || !temPreco || !temMetrica) {
     return res.status(400).json({
-      erro: "Campos obrigatórios: nome (string não vazia), preco (número >= 0) e metrica (string não vazia).",
+      erro: "Campos obrigatórios: nome (string não vazia), preco (número >= 0 e < 1000) e metrica (string não vazia).",
+    });
+  }
+
+  const precoValido = precoNum < 1000;
+
+  if (!precoValido) {
+    return res.status(422).json({
+      erro: "Campo 'preco' deve ser menor que 1000",
     });
   }
 
@@ -124,6 +128,7 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) return res.status(400).json({ erro: "ID do ingrediente inválido." });
+
   const auth = getAuthInfo(req, res);
   if (!auth) return;
   const { uid, isAdmin } = auth;
@@ -137,17 +142,22 @@ router.put("/:id", async (req, res) => {
 
   if (!temNome || !temPreco || !temMetrica) {
     return res.status(400).json({
-      erro: "Para PUT, envie nome (string não vazia), preco (número >= 0) e metrica (string não vazia).",
+      erro: "Campos obrigatórios: nome (string não vazia), preco (número >= 0 e < 1000) e metrica (string não vazia).",
+    });
+  }
+
+  const precoValido = precoNum < 1000;
+
+  if (!precoValido) {
+    return res.status(422).json({
+      erro: "Preço deve ser menor que 1000.",
     });
   }
 
   try {
     const ingrediente = await obterIngredientePorId(id);
-    if (!ingrediente) {
-      return res.status(404).json({ erro: "Ingrediente não encontrado." });
-    }
 
-    if (!isAdmin && ingrediente.usuario_id !== uid) {
+    if (!ingrediente || (!isAdmin && ingrediente.usuario_id !== uid)) {
       return res.status(404).json({ erro: "Ingrediente não encontrado." });
     }
 
@@ -184,11 +194,8 @@ router.patch("/:id", async (req, res) => {
 
   try {
     const ingrediente = await obterIngredientePorId(id);
-    if (!ingrediente) {
-      return res.status(404).json({ erro: "Ingrediente não encontrado." });
-    }
 
-    if (!isAdmin && ingrediente.usuario_id !== uid) {
+    if (!ingrediente || (!isAdmin && ingrediente.usuario_id !== uid)) {
       return res.status(404).json({ erro: "Ingrediente não encontrado." });
     }
 
@@ -207,7 +214,7 @@ router.patch("/:id", async (req, res) => {
     if (preco !== undefined) {
       const pnum = Number(preco);
       if (Number.isNaN(pnum) || pnum < 0) {
-        return res.status(400).json({ erro: "Campo 'preco' deve ser número >= 0." });
+        return res.status(400).json({ erro: "Campo 'preco' deve ser número >= 0 e < 1000." });
       }
       updates.push(`preco = $${idx++}`);
       params.push(pnum);
@@ -237,7 +244,7 @@ router.patch("/:id", async (req, res) => {
     res.json(rows[0]);
   } catch (e) {
     console.error("Erro ao atualizar ingrediente (PATCH):", e);
-    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível atualizar ingrediente." });
+    res.status(500).json({ erro: "Erro interno do servidor. Não foi possível atualizar ingrediente parcialmente." });
   }
 });
 
@@ -251,12 +258,9 @@ router.delete("/:id", async (req, res) => {
 
   try {
     const ingrediente = await obterIngredientePorId(id);
-    if (!ingrediente) {
-      return res.status(404).json({ erro: "Ingrediente não encontrado." });
-    }
 
-    if (!isAdmin && ingrediente.usuario_id !== uid) {
-      return res.status(403).json({ erro: "Você não tem permissão para excluir este ingrediente." });
+    if (!ingrediente || (!isAdmin && ingrediente.usuario_id !== uid)) {
+      return res.status(404).json({ erro: "Ingrediente não encontrado." });
     }
 
     await pool.query(
@@ -267,7 +271,7 @@ router.delete("/:id", async (req, res) => {
     res.status(204).end();
 
   } catch (e) {
-    console.error("Erro ao deletar ingrediente:", e);
+    console.error("Erro ao deletar ingrediente (DELETE):", e);
     res.status(500).json({
       erro: "Erro interno do servidor. Não foi possível remover ingrediente."
     });
