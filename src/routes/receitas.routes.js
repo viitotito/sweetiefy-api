@@ -42,7 +42,7 @@ async function removerArquivoPorUrl(url_imagem) {
     const filename = path.basename(pathname);
     const filePath = path.join(uploadDir, filename);
     await unlink(filePath);
-  } catch { }
+  } catch {}
 }
 
 async function obterReceitaPorId(id) {
@@ -88,7 +88,8 @@ router.get("/:id", async (req, res) => {
 
   try {
     const receita = await obterReceitaPorId(id);
-    if (!receita) return res.status(404).json({ erro: "Receita não encontrada." });
+    if (!receita)
+      return res.status(404).json({ erro: "Receita não encontrada." });
     if (!isAdmin && receita.usuario_id !== uid)
       return res.status(404).json({ erro: "Receita não encontrada." });
 
@@ -104,14 +105,47 @@ router.get("/:id", async (req, res) => {
       [id]
     );
 
-    receita.ingredientes = ingredientesResult.rows; 
+    receita.ingredientes = ingredientesResult.rows;
     res.json(receita);
   } catch (e) {
     console.error("Erro ao buscar receita:", e);
     res.status(500).json({ erro: "Erro interno do servidor." });
   }
 });
+router.delete("/:id", async (req, res) => {
+  const id = parseIdParam(req.params.id);
+  if (!id) return res.status(400).json({ erro: "ID inválido." });
 
+  const uid = req.user.id;
+  const isAdmin = Number(req.user.perfil) === 1;
+
+  try {
+    const receitaExistente = await obterReceitaPorId(id);
+    if (!receitaExistente)
+      return res.status(404).json({ erro: "Receita não encontrada." });
+
+    if (!isAdmin && receitaExistente.usuario_id !== uid) {
+      return res
+        .status(403)
+        .json({ erro: "Sem permissão para excluir esta receita." });
+    }
+
+    await pool.query(`DELETE FROM receitas_ingredientes WHERE receita_id=$1`, [
+      id,
+    ]);
+
+    if (receitaExistente.imagem_url) {
+      await removerArquivoPorUrl(receitaExistente.imagem_url);
+    }
+
+    await pool.query(`DELETE FROM receitas WHERE id=$1`, [id]);
+
+    res.status(200).json({ mensagem: "Receita excluída com sucesso." });
+  } catch (e) {
+    console.error("Erro ao excluir receita:", e);
+    res.status(500).json({ erro: "Erro interno do servidor." });
+  }
+});
 router.patch("/:id", upload.single("imagem"), async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) return res.status(400).json({ erro: "ID inválido." });
@@ -123,7 +157,9 @@ router.patch("/:id", upload.single("imagem"), async (req, res) => {
 
   let ingredientes = [];
   try {
-    ingredientes = req.body.ingredientes ? JSON.parse(req.body.ingredientes) : [];
+    ingredientes = req.body.ingredientes
+      ? JSON.parse(req.body.ingredientes)
+      : [];
   } catch {
     return res.status(400).json({ erro: "Formato de ingredientes inválido." });
   }
@@ -133,20 +169,29 @@ router.patch("/:id", upload.single("imagem"), async (req, res) => {
   }
 
   if (!Array.isArray(ingredientes) || ingredientes.length === 0) {
-    return res.status(400).json({ erro: "É obrigatório passar pelo menos um ingrediente." });
+    return res
+      .status(400)
+      .json({ erro: "É obrigatório passar pelo menos um ingrediente." });
   }
 
   for (const ing of ingredientes) {
     if (!ing.id || !ing.quantidade || ing.quantidade <= 0) {
-      return res.status(400).json({ erro: "Todos os ingredientes devem ter id válido e quantidade > 0." });
+      return res
+        .status(400)
+        .json({
+          erro: "Todos os ingredientes devem ter id válido e quantidade > 0.",
+        });
     }
   }
 
   try {
     const receitaExistente = await obterReceitaPorId(id);
-    if (!receitaExistente) return res.status(404).json({ erro: "Receita não encontrada." });
+    if (!receitaExistente)
+      return res.status(404).json({ erro: "Receita não encontrada." });
     if (!isAdmin && receitaExistente.usuario_id !== uid) {
-      return res.status(403).json({ erro: "Sem permissão para atualizar esta receita." });
+      return res
+        .status(403)
+        .json({ erro: "Sem permissão para atualizar esta receita." });
     }
 
     await pool.query(
@@ -157,13 +202,19 @@ router.patch("/:id", upload.single("imagem"), async (req, res) => {
     if (req.file) {
       const imagemUrl = await salvarUploadEmDisco(req.file);
 
-      if (receitaExistente.imagem_url) await removerArquivoPorUrl(receitaExistente.imagem_url);
+      if (receitaExistente.imagem_url)
+        await removerArquivoPorUrl(receitaExistente.imagem_url);
 
-      await pool.query(`UPDATE receitas SET imagem_url=$1 WHERE id=$2`, [imagemUrl, id]);
+      await pool.query(`UPDATE receitas SET imagem_url=$1 WHERE id=$2`, [
+        imagemUrl,
+        id,
+      ]);
     }
 
-    await pool.query(`DELETE FROM receitas_ingredientes WHERE receita_id=$1`, [id]);
- 
+    await pool.query(`DELETE FROM receitas_ingredientes WHERE receita_id=$1`, [
+      id,
+    ]);
+
     for (const ing of ingredientes) {
       await pool.query(
         `INSERT INTO receitas_ingredientes (receita_id, ingrediente_id, quantidade)
@@ -195,7 +246,9 @@ router.post("/", upload.single("imagem"), async (req, res) => {
 
   let ingredientes = [];
   try {
-    ingredientes = req.body.ingredientes ? JSON.parse(req.body.ingredientes) : [];
+    ingredientes = req.body.ingredientes
+      ? JSON.parse(req.body.ingredientes)
+      : [];
   } catch {
     return res.status(400).json({ erro: "Formato de ingredientes inválido." });
   }
@@ -205,19 +258,29 @@ router.post("/", upload.single("imagem"), async (req, res) => {
   }
 
   if (!Array.isArray(ingredientes) || ingredientes.length === 0) {
-    return res.status(400).json({ erro: "É obrigatório passar pelo menos um ingrediente." });
+    return res
+      .status(400)
+      .json({ erro: "É obrigatório passar pelo menos um ingrediente." });
   }
 
   for (const ing of ingredientes) {
     if (!ing.id || !ing.quantidade || ing.quantidade <= 0) {
-      return res.status(400).json({ erro: "Todos os ingredientes devem ter id válido e quantidade > 0." });
+      return res
+        .status(400)
+        .json({
+          erro: "Todos os ingredientes devem ter id válido e quantidade > 0.",
+        });
     }
   }
 
   let imagemUrl = null;
 
   try {
-    if (req.file) imagemUrl = await salvarUploadEmDisco(req.file ? req.file : null, req.file);
+    if (req.file)
+      imagemUrl = await salvarUploadEmDisco(
+        req.file ? req.file : null,
+        req.file
+      );
 
     const { rows } = await pool.query(
       `INSERT INTO receitas (nome, descricao, usuario_id, imagem_url, preco)
