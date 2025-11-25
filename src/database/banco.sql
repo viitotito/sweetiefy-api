@@ -63,8 +63,8 @@ VALUES
 
 INSERT INTO receitas_ingredientes (receita_id, ingrediente_id, quantidade)
 VALUES
-(1, 1, 200),
-(2, 2, 20),
-(3, 3, 100),
-(4, 4, 150),
-(5, 5, 120); 
+(1, 1, 2),
+(2, 2, 1),
+(3, 3, 4),
+(4, 4, 3),
+(5, 5, 4); 
