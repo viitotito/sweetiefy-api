@@ -102,12 +102,8 @@ router.post("/", async (req, res) => {
     });
   }
 
-  const precoValido = precoNum < 1000;
-
-  if (!precoValido) {
-    return res.status(422).json({
-      erro: "Campo 'preco' deve ser menor que 1000",
-    });
+   if (precoNum >= 1000) {
+    return res.status(422).json({ erro: "Campo preço deve ser menor que 1000." });
   }
 
   try {
@@ -263,17 +259,14 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ erro: "Ingrediente não encontrado." });
     }
 
-    await pool.query(
-      `DELETE FROM ingredientes WHERE id = $1`,
-      [id]
-    );
+    await pool.query(`DELETE FROM ingredientes WHERE id = $1`,[id]);
 
-    res.status(204).end();
+    res.status(200).json({mensagem: "Ingrediente excluído com sucesso!"})
 
   } catch (e) {
-    console.error("Erro ao deletar ingrediente (DELETE):", e);
+    console.error("Erro ao exluir ingrediente (DELETE):", e);
     res.status(500).json({
-      erro: "Erro interno do servidor. Não foi possível remover ingrediente."
+      erro: "Erro interno do servidor. Não foi possível excluir ingrediente."
     });
   }
 });

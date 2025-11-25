@@ -98,15 +98,16 @@ router.post("/register", async (req, res) => {
         if (err?.code === "23505") {
             return res.status(409).json({ erro: "Email já foi cadastrado." });
         }
-        console.error("Erro ao registrar usuário:", err);
-        return res.status(500).json({ erro: "Erro interno do servidor." });
+        console.error("Erro ao registrar usuário (POST):", err);
+        return res.status(500).json({ erro: "Erro interno do servidor. Não foi possível registrar usuário." });
     }
 });
 
 router.post("/login", async (req, res) => {
     const { email, senha } = req.body ?? {};
-    if (!email || !senha) return res.status(400).json({ erro: "Campos email e senha são obrigatórios." });
-
+    if (!email || !senha) {
+        return res.status(400).json({ erro: "Campos email e senha são obrigatórios." });
+    }
     try {
         const r = await pool.query(
             `SELECT "id","nome","email","senha_hash","perfil" FROM "usuarios" WHERE "email" = $1`,
@@ -124,8 +125,8 @@ router.post("/login", async (req, res) => {
 
         return res.json({ token_type: "Bearer", access_token, expires_in: JWT_ACCESS_EXPIRES, user });
     } catch (e) {
-        console.error("Erro ao fazer login:", e);
-        return res.status(500).json({ erro: "Erro interno do servidor." });
+        console.error("Erro ao fazer login (POST):", e);
+        return res.status(500).json({ erro: "Erro interno do servidor. Não foi possível fazer login." });
     }
 });
 
@@ -143,7 +144,7 @@ router.post("/refresh", async (req, res) => {
         const new_access = signAccessToken(r.rows[0]);
         return res.json({ token_type: "Bearer", access_token: new_access, expires_in: JWT_ACCESS_EXPIRES });
     } catch (e) {
-        console.error("Erro ao validar refresh token:", e);
+        console.error("Erro ao validar refresh token (POST):", e);
         clearRefreshCookie(res, req);
         return res.status(401).json({ erro: "Refresh token inválido ou expirado." });
     }
@@ -151,7 +152,7 @@ router.post("/refresh", async (req, res) => {
 
 router.post("/logout", (req, res) => {
     clearRefreshCookie(res, req);
-    return res.status(204).end();
+    return res.status(204).json({mensagem: "Logout realizado com sucesso!"})
 });
 
 router.use(authMiddleware);
@@ -164,14 +165,14 @@ router.get("/", requireAdmin, async (req, res) => {
         );
         res.json(rows);
     } catch (err) {
-        console.error("Erro ao listar usuários:", err);
-        res.status(500).json({ erro: "Erro interno do servidor." });
+        console.error("Erro ao listar usuários (GET):", err);
+        res.status(500).json({ erro: "Erro interno do servidor. Não foi possível listar usuários." });
     }
 });
 
 router.get("/:id", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
-    if (!Number.isInteger(id)) return res.status(400).json({ erro: "ID inválido." });
+    if (!Number.isInteger(id)) return res.status(400).json({ erro: "ID do usuário inválido." });
 
     try {
         const { rows } = await pool.query(
@@ -182,14 +183,14 @@ router.get("/:id", requireAdmin, async (req, res) => {
         if (!rows.length) return res.status(404).json({ erro: "Usuário não encontrado." });
         res.json(rows[0]);
     } catch (err) {
-        console.error("Erro ao buscar usuário:", err);
-        res.status(500).json({ erro: "Erro interno do servidor." });
+        console.error("Erro ao buscar usuário (GET/:id):", err);
+        res.status(500).json({ erro: "Erro interno do servidor. Não foi possível encontrar usuário." });
     }
 });
 
 router.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
-    if (!Number.isInteger(id)) return res.status(400).json({ erro: "ID inválido." });
+    if (!Number.isInteger(id)) return res.status(400).json({ erro: "ID do usuário inválido." });
 
     const { nome, email, perfil, senha } = req.body ?? {};
 
@@ -221,7 +222,7 @@ router.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
             params.push(senha_hash);
         }
 
-        updates.push(`data_atualizacao = NOW()`); 
+        updates.push(`data_atualizacao = NOW()`);
 
         const query = `
             UPDATE usuarios
@@ -243,15 +244,15 @@ router.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
 
 router.delete("/:id", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
-    if (!Number.isInteger(id)) return res.status(400).json({ erro: "ID inválido." });
+    if (!Number.isInteger(id)) return res.status(400).json({ erro: "ID do usuário inválido." });
 
     try {
         const { rowCount } = await pool.query("DELETE FROM usuarios WHERE id = $1", [id]);
         if (!rowCount) return res.status(404).json({ erro: "Usuário não encontrado." });
         res.status(204).end();
     } catch (err) {
-        console.error("Erro ao deletar usuário:", err);
-        res.status(500).json({ erro: "Erro interno do servidor." });
+        console.error("Erro ao deletar usuário (DELETE):", err);
+        res.status(500).json({ erro: "Erro interno do servidor. Não foi possível excluir usuário." });
     }
 });
 
