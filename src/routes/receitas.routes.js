@@ -12,6 +12,7 @@ router.use((req, res, next) => {
   console.log("Usuário autenticado:", req.user);
   next();
 });
+
 const uploadDir = path.resolve("uploads");
 fs.mkdirSync(uploadDir, { recursive: true });
 
@@ -65,7 +66,7 @@ const upload = multer({
 // LISTAR RECEITAS
 router.get("/", async (req, res) => {
   const uid = req.user.id;
-  const isAdmin = Number(req.user.perfil) === 1; // 1 = Admin
+  const isAdmin = Number(req.user.perfil) === 1;
   try {
     let query = `SELECT id, nome, descricao, usuario_id, imagem_url, preco, data_criacao, data_atualizacao FROM receitas`;
     const params = [];
@@ -90,7 +91,7 @@ router.get("/:id", async (req, res) => {
   if (!id) return res.status(400).json({ erro: "ID inválido." });
 
   const uid = req.user.id;
-  const isAdmin = Number(req.user.perfil) === 1; // 1 = Admin
+  const isAdmin = Number(req.user.perfil) === 1;
 
   try {
     const receita = await obterReceitaPorId(id);
@@ -144,26 +145,59 @@ router.post("/", upload.single("imagem"), async (req, res) => {
   }
 });
 
+// ATUALIZAR RECEITA (PATCH)
+router.patch("/:id", upload.single("imagem"), async (req, res) => {
+  const id = parseIdParam(req.params.id);
+  if (!id) return res.status(400).json({ erro: "ID inválido." });
+
+  const uid = req.user.id;
+  const isAdmin = Number(req.user.perfil) === 1;
+
+  try {
+    const receita = await obterReceitaPorId(id);
+    if (!receita) return res.status(404).json({ erro: "Receita não encontrada." });
+    if (!isAdmin && receita.usuario_id !== uid)
+      return res.status(403).json({ erro: "Sem permissão." });
+
+    const { nome, descricao, preco } = req.body;
+    let imagemUrl = receita.imagem_url;
+
+    // Substituir imagem, se enviada
+    if (req.file) {
+      if (imagemUrl) await removerArquivoPorUrl(imagemUrl); // remove antiga
+      imagemUrl = await salvarUploadEmDisco(req, req.file);   // salva nova
+    }
+
+    const { rows } = await pool.query(
+      `UPDATE receitas
+       SET nome=$1, descricao=$2, preco=$3, imagem_url=$4, data_atualizacao=NOW()
+       WHERE id=$5
+       RETURNING *`,
+      [nome ?? receita.nome, descricao ?? receita.descricao, preco ?? receita.preco, imagemUrl, id]
+    );
+
+    res.json(rows[0]);
+  } catch (e) {
+    console.error("Erro ao atualizar receita:", e);
+    res.status(500).json({ erro: "Erro interno do servidor." });
+  }
+});
+
 // DELETAR RECEITA
 router.delete("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) return res.status(400).json({ erro: "ID inválido." });
 
   const uid = req.user.id;
-  const isAdmin = Number(req.user.perfil) === 1; // 1 = Admin
+  const isAdmin = Number(req.user.perfil) === 1;
 
   try {
     const receita = await obterReceitaPorId(id);
     if (!receita) return res.status(404).json({ erro: "Receita não encontrada." });
     if (!isAdmin && receita.usuario_id !== uid) return res.status(403).json({ erro: "Sem permissão." });
 
-    // Deletar ingredientes associados
     await pool.query(`DELETE FROM receitas_ingredientes WHERE receita_id=$1`, [id]);
-
-    // Deletar receita
     await pool.query(`DELETE FROM receitas WHERE id=$1`, [id]);
-
-    // Remover imagem
     if (receita.imagem_url) await removerArquivoPorUrl(receita.imagem_url);
 
     res.status(200).json({ message: "Receita e ingredientes deletados com sucesso." });
@@ -172,7 +206,6 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ erro: "Erro interno do servidor." });
   }
 });
-
 
 // ADICIONAR INGREDIENTE À RECEITA
 router.post("/:receitaId/ingredientes", async (req, res) => {
