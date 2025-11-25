@@ -4,14 +4,10 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { writeFile, unlink } from "node:fs/promises";
-import { authMiddleware } from "../middlewares/auth.js"; 
+import { authMiddleware } from "../middlewares/auth.js";
 
 const router = Router();
-router.use(authMiddleware); 
-router.use((req, res, next) => {
-  console.log("Usuário autenticado:", req.user);
-  next();
-});
+router.use(authMiddleware);
 
 const uploadDir = path.resolve("uploads");
 fs.mkdirSync(uploadDir, { recursive: true });
@@ -46,7 +42,7 @@ async function removerArquivoPorUrl(url_imagem) {
     const filename = path.basename(pathname);
     const filePath = path.join(uploadDir, filename);
     await unlink(filePath);
-  } catch {}
+  } catch { }
 }
 
 async function obterReceitaPorId(id) {
@@ -63,7 +59,6 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
-// LISTAR RECEITAS
 router.get("/", async (req, res) => {
   const uid = req.user.id;
   const isAdmin = Number(req.user.perfil) === 1;
@@ -84,8 +79,6 @@ router.get("/", async (req, res) => {
     res.status(500).json({ erro: "Erro interno do servidor." });
   }
 });
-
-// OBTER RECEITA POR ID
 router.get("/:id", async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) return res.status(400).json({ erro: "ID inválido." });
@@ -96,20 +89,22 @@ router.get("/:id", async (req, res) => {
   try {
     const receita = await obterReceitaPorId(id);
     if (!receita) return res.status(404).json({ erro: "Receita não encontrada." });
-    if (!isAdmin && receita.usuario_id !== uid) return res.status(404).json({ erro: "Receita não encontrada." });
+    if (!isAdmin && receita.usuario_id !== uid)
+      return res.status(404).json({ erro: "Receita não encontrada." });
 
     const ingredientesResult = await pool.query(
       `SELECT ri.quantidade,
-              i.id AS ingrediente_id,
-              i.nome,
-              i.preco,
-              i.metrica
-       FROM receitas_ingredientes ri
-       JOIN ingredientes i ON ri.ingrediente_id = i.id
-       WHERE ri.receita_id = $1`,
+                    i.id AS ingrediente_id,
+                    i.nome,
+                    i.preco,
+                    i.metrica
+             FROM receitas_ingredientes ri
+             JOIN ingredientes i ON ri.ingrediente_id = i.id
+             WHERE ri.receita_id = $1`,
       [id]
     );
-    receita.ingredientes = ingredientesResult.rows;
+
+    receita.ingredientes = ingredientesResult.rows; 
     res.json(receita);
   } catch (e) {
     console.error("Erro ao buscar receita:", e);
@@ -117,35 +112,6 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// CRIAR RECEITA
-router.post("/", upload.single("imagem"), async (req, res) => {
-  const uid = req.user.id;
-  const { nome, descricao, preco } = req.body ?? {};
-
-  if (!nome || nome.trim() === "" || preco === undefined || preco < 0) {
-    return res.status(400).json({ erro: "Campos inválidos: nome e preco." });
-  }
-
-  let imagemUrl = null;
-  try {
-    if (req.file) imagemUrl = await salvarUploadEmDisco(req, req.file);
-
-    const { rows } = await pool.query(
-      `INSERT INTO receitas (nome, descricao, usuario_id, imagem_url, preco)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [nome.trim(), descricao?.trim() ?? null, uid, imagemUrl, Number(preco)]
-    );
-
-    res.status(201).json(rows[0]);
-  } catch (e) {
-    console.error("Erro ao criar receita:", e);
-    if (imagemUrl) await removerArquivoPorUrl(imagemUrl);
-    res.status(500).json({ erro: "Erro interno do servidor." });
-  }
-});
-
-// ATUALIZAR RECEITA (PATCH)
 router.patch("/:id", upload.single("imagem"), async (req, res) => {
   const id = parseIdParam(req.params.id);
   if (!id) return res.status(400).json({ erro: "ID inválido." });
@@ -153,98 +119,126 @@ router.patch("/:id", upload.single("imagem"), async (req, res) => {
   const uid = req.user.id;
   const isAdmin = Number(req.user.perfil) === 1;
 
+  const { nome, descricao, preco } = req.body;
+
+  let ingredientes = [];
   try {
-    const receita = await obterReceitaPorId(id);
-    if (!receita) return res.status(404).json({ erro: "Receita não encontrada." });
-    if (!isAdmin && receita.usuario_id !== uid)
-      return res.status(403).json({ erro: "Sem permissão." });
+    ingredientes = req.body.ingredientes ? JSON.parse(req.body.ingredientes) : [];
+  } catch {
+    return res.status(400).json({ erro: "Formato de ingredientes inválido." });
+  }
 
-    const { nome, descricao, preco } = req.body;
-    let imagemUrl = receita.imagem_url;
+  if (!nome || nome.trim() === "" || preco === undefined || preco < 0) {
+    return res.status(400).json({ erro: "Campos inválidos: nome e preco." });
+  }
 
-    // Substituir imagem, se enviada
-    if (req.file) {
-      if (imagemUrl) await removerArquivoPorUrl(imagemUrl); // remove antiga
-      imagemUrl = await salvarUploadEmDisco(req, req.file);   // salva nova
+  if (!Array.isArray(ingredientes) || ingredientes.length === 0) {
+    return res.status(400).json({ erro: "É obrigatório passar pelo menos um ingrediente." });
+  }
+
+  for (const ing of ingredientes) {
+    if (!ing.id || !ing.quantidade || ing.quantidade <= 0) {
+      return res.status(400).json({ erro: "Todos os ingredientes devem ter id válido e quantidade > 0." });
+    }
+  }
+
+  try {
+    const receitaExistente = await obterReceitaPorId(id);
+    if (!receitaExistente) return res.status(404).json({ erro: "Receita não encontrada." });
+    if (!isAdmin && receitaExistente.usuario_id !== uid) {
+      return res.status(403).json({ erro: "Sem permissão para atualizar esta receita." });
     }
 
-    const { rows } = await pool.query(
-      `UPDATE receitas
-       SET nome=$1, descricao=$2, preco=$3, imagem_url=$4, data_atualizacao=NOW()
-       WHERE id=$5
-       RETURNING *`,
-      [nome ?? receita.nome, descricao ?? receita.descricao, preco ?? receita.preco, imagemUrl, id]
+    await pool.query(
+      `UPDATE receitas SET nome=$1, descricao=$2, preco=$3, data_atualizacao=now() WHERE id=$4`,
+      [nome.trim(), descricao?.trim() ?? null, Number(preco), id]
     );
 
-    res.json(rows[0]);
+    if (req.file) {
+      const imagemUrl = await salvarUploadEmDisco(req.file);
+
+      if (receitaExistente.imagem_url) await removerArquivoPorUrl(receitaExistente.imagem_url);
+
+      await pool.query(`UPDATE receitas SET imagem_url=$1 WHERE id=$2`, [imagemUrl, id]);
+    }
+
+    await pool.query(`DELETE FROM receitas_ingredientes WHERE receita_id=$1`, [id]);
+ 
+    for (const ing of ingredientes) {
+      await pool.query(
+        `INSERT INTO receitas_ingredientes (receita_id, ingrediente_id, quantidade)
+         VALUES ($1, $2, $3)`,
+        [id, Number(ing.id), Number(ing.quantidade)]
+      );
+    }
+
+    const receitaAtualizada = await obterReceitaPorId(id);
+    const ingredientesResult = await pool.query(
+      `SELECT ri.quantidade, i.id AS ingrediente_id, i.nome, i.preco, i.metrica
+       FROM receitas_ingredientes ri
+       JOIN ingredientes i ON ri.ingrediente_id = i.id
+       WHERE ri.receita_id = $1`,
+      [id]
+    );
+    receitaAtualizada.ingredientes = ingredientesResult.rows;
+
+    res.json(receitaAtualizada);
   } catch (e) {
     console.error("Erro ao atualizar receita:", e);
     res.status(500).json({ erro: "Erro interno do servidor." });
   }
 });
 
-// DELETAR RECEITA
-router.delete("/:id", async (req, res) => {
-  const id = parseIdParam(req.params.id);
-  if (!id) return res.status(400).json({ erro: "ID inválido." });
-
+router.post("/", upload.single("imagem"), async (req, res) => {
   const uid = req.user.id;
-  const isAdmin = Number(req.user.perfil) === 1;
+  const { nome, descricao, preco } = req.body;
 
+  let ingredientes = [];
   try {
-    const receita = await obterReceitaPorId(id);
-    if (!receita) return res.status(404).json({ erro: "Receita não encontrada." });
-    if (!isAdmin && receita.usuario_id !== uid) return res.status(403).json({ erro: "Sem permissão." });
-
-    await pool.query(`DELETE FROM receitas_ingredientes WHERE receita_id=$1`, [id]);
-    await pool.query(`DELETE FROM receitas WHERE id=$1`, [id]);
-    if (receita.imagem_url) await removerArquivoPorUrl(receita.imagem_url);
-
-    res.status(200).json({ message: "Receita e ingredientes deletados com sucesso." });
-  } catch (e) {
-    console.error("Erro ao deletar receita:", e);
-    res.status(500).json({ erro: "Erro interno do servidor." });
+    ingredientes = req.body.ingredientes ? JSON.parse(req.body.ingredientes) : [];
+  } catch {
+    return res.status(400).json({ erro: "Formato de ingredientes inválido." });
   }
-});
 
-// ADICIONAR INGREDIENTE À RECEITA
-router.post("/:receitaId/ingredientes", async (req, res) => {
-  const receita_id = parseIdParam(req.params.receitaId);
-  const { ingrediente_id, quantidade } = req.body ?? {};
-  const iid = Number(ingrediente_id);
-  const qtd = Number(quantidade);
+  if (!nome || nome.trim() === "" || preco === undefined || preco < 0) {
+    return res.status(400).json({ erro: "Campos inválidos: nome e preco." });
+  }
 
-  if (!receita_id || !iid || qtd < 0) return res.status(400).json({ erro: "Campos inválidos." });
+  if (!Array.isArray(ingredientes) || ingredientes.length === 0) {
+    return res.status(400).json({ erro: "É obrigatório passar pelo menos um ingrediente." });
+  }
+
+  for (const ing of ingredientes) {
+    if (!ing.id || !ing.quantidade || ing.quantidade <= 0) {
+      return res.status(400).json({ erro: "Todos os ingredientes devem ter id válido e quantidade > 0." });
+    }
+  }
+
+  let imagemUrl = null;
 
   try {
+    if (req.file) imagemUrl = await salvarUploadEmDisco(req.file ? req.file : null, req.file);
+
     const { rows } = await pool.query(
-      `INSERT INTO receitas_ingredientes (receita_id, ingrediente_id, quantidade)
-       VALUES ($1, $2, $3) RETURNING *`,
-      [receita_id, iid, qtd]
+      `INSERT INTO receitas (nome, descricao, usuario_id, imagem_url, preco)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [nome.trim(), descricao?.trim() ?? null, uid, imagemUrl, Number(preco)]
     );
-    res.status(201).json(rows[0]);
+
+    const receitaCriada = rows[0];
+
+    for (const ing of ingredientes) {
+      await pool.query(
+        `INSERT INTO receitas_ingredientes (receita_id, ingrediente_id, quantidade)
+         VALUES ($1, $2, $3)`,
+        [receitaCriada.id, Number(ing.id), Number(ing.quantidade)]
+      );
+    }
+
+    res.status(201).json(receitaCriada);
   } catch (e) {
-    console.error("Erro ao adicionar ingrediente:", e);
-    res.status(500).json({ erro: "Erro interno do servidor." });
-  }
-});
-
-// REMOVER INGREDIENTE DA RECEITA
-router.delete("/:receitaId/ingredientes/:ingredienteId", async (req, res) => {
-  const receita_id = parseIdParam(req.params.receitaId);
-  const ingrediente_id = parseIdParam(req.params.ingredienteId);
-
-  if (!receita_id || !ingrediente_id) return res.status(400).json({ erro: "IDs inválidos." });
-
-  try {
-    const r = await pool.query(
-      `DELETE FROM receitas_ingredientes WHERE receita_id=$1 AND ingrediente_id=$2 RETURNING id`,
-      [receita_id, ingrediente_id]
-    );
-    if (!r.rowCount) return res.status(404).json({ erro: "Associação não encontrada." });
-    res.status(204).end();
-  } catch (e) {
-    console.error("Erro ao remover ingrediente:", e);
+    console.error("Erro ao criar receita:", e);
+    if (imagemUrl) await removerArquivoPorUrl(imagemUrl);
     res.status(500).json({ erro: "Erro interno do servidor." });
   }
 });

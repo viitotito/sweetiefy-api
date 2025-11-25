@@ -32,7 +32,7 @@ app.get("/", (_req, res) => {
     });
 });
 
-app.use("/api/usuarios", usuariosRouter);
+app.use("/api/usuarios", userLimiter,usuariosRouter);
 
 app.use("/api/ingredientes", authMiddleware, userLimiter, ingredientesRouter);
 app.use("/api/receitas", authMiddleware, userLimiter, receitasRouter);
