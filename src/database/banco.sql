@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS ingredientes (
 
 CREATE TABLE IF NOT EXISTS receitas (
     id SERIAL PRIMARY KEY,
-    nome VARCHAR(150) NOT NULL,
+    nome VARCHAR(150) NOT NULL UNIQUE,
     descricao VARCHAR(255),
     usuario_id INT NOT NULL REFERENCES usuarios(id),
     imagem_url VARCHAR(255),

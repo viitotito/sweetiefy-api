@@ -120,6 +120,9 @@ router.post("/", async (req, res) => {
 
     res.status(201).json(rows[0]);
   } catch (e) {
+    if (e.code === "23505") {
+      return res.status(409).json({ erro: "Você já tem um ingrediente com esse nome." });
+    }
     console.error("Erro ao criar ingrediente (POST):", e);
     res.status(500).json({ erro: "Erro interno do servidor. Não foi possível criar ingrediente." });
   }
@@ -154,6 +157,9 @@ router.put("/:id", async (req, res) => {
 
     res.json(rows[0]);
   } catch (e) {
+    if (e.code === "23505") {
+      return res.status(409).json({ erro: "Você já tem um ingrediente com esse nome." });
+    }
     console.error("Erro ao atualizar ingrediente (PUT):", e);
     res.status(500).json({ erro: "Erro interno do servidor. Não foi possível atualizar ingrediente." });
   }
@@ -215,6 +221,9 @@ router.patch("/:id", async (req, res) => {
     const { rows } = await pool.query(sql, params);
     res.json(rows[0]);
   } catch (e) {
+    if (e.code === "23505") {
+      return res.status(409).json({ erro: "Você já tem um ingrediente com esse nome." });
+    }
     console.error("Erro ao atualizar ingrediente (PATCH):", e);
     res.status(500).json({ erro: "Erro interno do servidor. Não foi possível atualizar ingrediente parcialmente." });
   }

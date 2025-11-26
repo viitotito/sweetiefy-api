@@ -204,6 +204,9 @@ router.post("/", upload.single("imagem"), async (req, res) => {
 
     res.status(201).json(receitaCriada);
   } catch (e) {
+    if (e.code === "23505") {
+      return res.status(409).json({ erro: "Você já tem uma receita com esse nome." });
+    }
     console.error("Erro ao criar receita (POST):", e);
     if (imagemUrl) await removerArquivoPorUrl(imagemUrl);
     if (e.message.includes("Tipo de arquivo não permitido")) {
@@ -265,6 +268,9 @@ router.put("/:id", upload.single("imagem"), async (req, res) => {
 
     res.json(receitaAtualizada);
   } catch (e) {
+    if (e.code === "23505") {
+      return res.status(409).json({ erro: "Você já tem uma receita com esse nome." });
+    }
     console.error("Erro ao atualizar receita (PUT):", e);
     if (e.message.includes("Tipo de arquivo não permitido")) {
       return res.status(400).json({ erro: e.message });
@@ -349,6 +355,9 @@ router.patch("/:id", upload.single("imagem"), async (req, res) => {
 
     res.json(receitaAtualizada);
   } catch (e) {
+    if (e.code === "23505") {
+      return res.status(409).json({ erro: "Você já tem uma receita com esse nome." });
+    }
     console.error("Erro ao atualizar receita (PATCH):", e);
     if (e.message.includes("Tipo de arquivo não permitido")) {
       return res.status(400).json({ erro: e.message });

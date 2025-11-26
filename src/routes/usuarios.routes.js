@@ -108,7 +108,15 @@ router.post("/register", async (req, res) => {
             user,
         });
     } catch (err) {
-        if (err?.code === "23505") return res.status(409).json({ erro: "Email já foi cadastrado." });
+        if (err?.code === "23505") {
+            if (err.detail?.includes("email")) {
+                return res.status(409).json({ erro: "Email já foi cadastrado." });
+            }
+            if (err.detail?.includes("nome")) {
+                return res.status(409).json({ erro: "Nome de usuário já está em uso." });
+            }
+            return res.status(409).json({ erro: "Valor único já existe." });
+        }
         console.error("Erro ao registrar usuário (POST):", err);
         return res.status(500).json({ erro: "Erro interno do servidor. Não foi possível registrar usuário." });
     }
@@ -169,7 +177,7 @@ router.use(authMiddleware);
 
 router.get("/", requireAdmin, async (req, res) => {
     try {
-        const adminId = req.user.id; 
+        const adminId = req.user.id;
         const { rows } = await pool.query(
             `SELECT id, nome, email, perfil, data_criacao, data_atualizacao 
              FROM usuarios 
@@ -240,6 +248,15 @@ router.patch("/:id", requireAdmin, async (req, res) => {
         const result = await pool.query(query, params);
         res.json(result.rows[0]);
     } catch (err) {
+        if (err?.code === "23505") {
+            if (err.detail?.includes("email")) {
+                return res.status(409).json({ erro: "Email já foi cadastrado." });
+            }
+            if (err.detail?.includes("nome")) {
+                return res.status(409).json({ erro: "Nome de usuário já está em uso." });
+            }
+            return res.status(409).json({ erro: "Valor único já existe." });
+        }
         console.error("Erro ao atualizar usuário parcialmente (PATCH):", err);
         res.status(500).json({ erro: "Erro interno do servidor. Não foi possível atualizar parcialmente o usuário." });
     }
