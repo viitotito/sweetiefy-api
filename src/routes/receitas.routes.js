@@ -77,7 +77,7 @@ async function removerArquivoPorUrl(url_imagem) {
 function validarNome(nome) {
   if (typeof nome !== "string" || nome.trim().length === 0) return "Nome é obrigatório.";
   if (nome.trim().length < 3) return "Nome deve ter pelo menos 3 caracteres.";
-  if (nome.trim().length > 255) return "Nome deve ter no máximo 255 caracteres.";
+  if (nome.trim().length > 150) return "Nome deve ter no máximo 150 caracteres.";
   const nomeRegex = /^[\p{L}0-9\s]+$/u;
   if (!nomeRegex.test(nome.trim())) return "Nome deve conter apenas letras e números.";
   return null;
