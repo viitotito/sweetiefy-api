@@ -169,7 +169,14 @@ router.use(authMiddleware);
 
 router.get("/", requireAdmin, async (req, res) => {
     try {
-        const { rows } = await pool.query(`SELECT id, nome, email, perfil, data_criacao, data_atualizacao FROM usuarios ORDER BY nome ASC`);
+        const adminId = req.user.id; 
+        const { rows } = await pool.query(
+            `SELECT id, nome, email, perfil, data_criacao, data_atualizacao 
+             FROM usuarios 
+             WHERE id <> $1
+             ORDER BY nome ASC`,
+            [adminId]
+        );
         res.json(rows);
     } catch (err) {
         console.error("Erro ao listar usuários (GET):", err);
