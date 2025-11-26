@@ -46,9 +46,9 @@ function signRefreshToken(u) {
 function cookieOpts() {
     return {
         httpOnly: true,
-        secure: isProduction,  
-        sameSite: isProduction ? "none" : "lax", 
-        path: "/",      
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+        path: "/",
         maxAge: REFRESH_MAX_AGE,
     };
 }
@@ -70,6 +70,26 @@ router.post("/register", async (req, res) => {
 
     if (senha.length < 6) {
         return res.status(400).json({ erro: "Senha deve ter pelo menos 6 caracteres." });
+    }
+
+    const senhaRegex = /^[a-zA-Z0-9]+$/;
+
+    if (!senhaRegex.test(senha)) {
+        return res.status(400).json({ erro: "Senha deve conter apenas letras e números." });
+    }
+    if (nome.length < 3) {
+        return res.status(400).json({ erro: "Nome deve ter pelo menos 3 caracteres." });
+    }
+
+    const nomeRegex = /^[a-zA-Z0-9]+$/;
+
+    if (!nomeRegex.test(nome)) {
+        return res.status(400).json({ erro: "Nome deve conter apenas letras e números." });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (email && !emailRegex.test(email)) {
+        return res.status(400).json({ erro: "Email inválido." });
     }
 
     try {
@@ -108,6 +128,12 @@ router.post("/login", async (req, res) => {
     if (!email || !senha) {
         return res.status(400).json({ erro: "Campos email e senha são obrigatórios." });
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (email && !emailRegex.test(email)) {
+        return res.status(400).json({ erro: "Email inválido." });
+    }
+
     try {
         const r = await pool.query(
             `SELECT "id","nome","email","senha_hash","perfil" FROM "usuarios" WHERE "email" = $1`,
@@ -152,7 +178,7 @@ router.post("/refresh", async (req, res) => {
 
 router.post("/logout", (req, res) => {
     clearRefreshCookie(res, req);
-    return res.status(204).json({mensagem: "Logout realizado com sucesso!"})
+    return res.status(204).json({ mensagem: "Logout realizado com sucesso!" })
 });
 
 router.use(authMiddleware);
@@ -199,28 +225,51 @@ router.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
     }
 
     try {
+        const { rows } = await pool.query("SELECT perfil FROM usuarios WHERE id = $1", [id]);
+        if (!rows.length) return res.status(404).json({ erro: "Usuário não encontrado." });
+
+        const alvo = rows[0];
+
+        if (id === req.user.id && perfil !== undefined && perfil !== alvo.perfil) {
+            return res.status(403).json({ erro: "Você não pode alterar seu próprio perfil." });
+        }
+
+        if (alvo.perfil === 1 && perfil !== undefined && perfil !== alvo.perfil) {
+            return res.status(403).json({ erro: "Não é permitido alterar o perfil de outro admin." });
+        }
+
+        if (nome && nome.length < 3) {
+            return res.status(400).json({ erro: "Nome deve ter pelo menos 3 caracteres." });
+        }
+        const nomeRegex = /^[a-zA-Z0-9]+$/;
+        if (nome && !nomeRegex.test(nome)) {
+            return res.status(400).json({ erro: "Nome deve conter apenas letras e números." });
+        }
+
+        if (email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({ erro: "Email inválido." });
+            }
+        }
+
+        let senha_hash;
+
+        if (senha) {
+            if (senha.length < 6) return res.status(400).json({ erro: "Senha deve ter pelo menos 6 caracteres." });
+            const senhaRegex = /^[a-zA-Z0-9]+$/;
+            if (!senhaRegex.test(senha)) return res.status(400).json({ erro: "Senha deve conter apenas letras e números." });
+            senha_hash = await bcrypt.hash(senha, 12);
+        }
+
         const updates = [];
         const params = [];
         let idx = 1;
 
-        if (nome) {
-            updates.push(`nome = $${idx++}`);
-            params.push(nome);
-        }
-        if (email) {
-            updates.push(`email = $${idx++}`);
-            params.push(email.toLowerCase());
-        }
-        if (perfil !== undefined) {
-            updates.push(`perfil = $${idx++}`);
-            params.push(perfil);
-        }
-        if (senha) {
-            if (senha.length < 6) return res.status(400).json({ erro: "Senha deve ter pelo menos 6 caracteres." });
-            const senha_hash = await bcrypt.hash(senha, 12);
-            updates.push(`senha_hash = $${idx++}`);
-            params.push(senha_hash);
-        }
+        if (nome) { updates.push(`nome = $${idx++}`); params.push(nome); }
+        if (email) { updates.push(`email = $${idx++}`); params.push(email.toLowerCase()); }
+        if (perfil !== undefined) { updates.push(`perfil = $${idx++}`); params.push(perfil); }
+        if (senha_hash) { updates.push(`senha_hash = $${idx++}`); params.push(senha_hash); }
 
         updates.push(`data_atualizacao = NOW()`);
 
@@ -232,13 +281,12 @@ router.patch("/:id", authMiddleware, requireAdmin, async (req, res) => {
         `;
         params.push(id);
 
-        const { rows } = await pool.query(query, params);
-        if (!rows.length) return res.status(404).json({ erro: "Usuário não encontrado." });
+        const result = await pool.query(query, params);
+        res.json(result.rows[0]);
 
-        res.json(rows[0]);
     } catch (err) {
-        console.error("Erro ao atualizar usuário:", err);
-        res.status(500).json({ erro: "Erro interno do servidor." });
+        console.error("Erro ao atualizar usuário parcialmente (PATCH):", err);
+        res.status(500).json({ erro: "Erro interno do servidor. Não foi possível atualizar parcialmente o usuário." });
     }
 });
 
@@ -246,9 +294,21 @@ router.delete("/:id", requireAdmin, async (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) return res.status(400).json({ erro: "ID do usuário inválido." });
 
+    if (id === req.user.id) {
+        return res.status(403).json({ erro: "Você não pode deletar a si mesmo." });
+    }
+
     try {
+        const { rows } = await pool.query("SELECT perfil FROM usuarios WHERE id = $1", [id]);
+        if (!rows.length) return res.status(404).json({ erro: "Usuário não encontrado." });
+
+        if (rows[0].perfil === 1) {
+            return res.status(403).json({ erro: "Não é permitido deletar outro admin." });
+        }
+
         const { rowCount } = await pool.query("DELETE FROM usuarios WHERE id = $1", [id]);
         if (!rowCount) return res.status(404).json({ erro: "Usuário não encontrado." });
+
         res.status(204).end();
     } catch (err) {
         console.error("Erro ao deletar usuário (DELETE):", err);

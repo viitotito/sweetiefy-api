@@ -58,7 +58,7 @@ const externalUrl = process.env.RENDER_EXTERNAL_URL;
 const server = app.listen(PORT, () => {
     const baseUrl = externalUrl || `http://localhost:${PORT}`;
     console.log(`Servidor rodando em ${baseUrl}`);
-    console.log("CORS configurado: permissivo (aceita qualquer origem).");
+    console.log("CORS configurado: restritivo (apenas origens específicas).");
 });
 
 server.keepAliveTimeout = 120 * 1000;
