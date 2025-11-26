@@ -10,7 +10,7 @@ export function authMiddleware(req, res, next) {
         const authorization_header = req.headers["authorization"];
 
         if (!authorization_header || !authorization_header.startsWith("Bearer ")) {
-            return res.status(401).json({ erro: "token ausente" });
+            return res.status(401).json({ erro: "Token ausente." });
         }
 
         const token = authorization_header.slice(7);
@@ -21,6 +21,6 @@ export function authMiddleware(req, res, next) {
 
         next();
     } catch {
-        return res.status(401).json({ erro: "token inválido" });
+        return res.status(401).json({ erro: "Token inválido." });
     }
 }
