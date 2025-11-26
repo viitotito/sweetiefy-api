@@ -4,7 +4,7 @@ CREATE TYPE metrica_enum AS ENUM ('Kg', 'g', 'L', 'ml', 'unidade', 'mg');
 
 CREATE TABLE IF NOT EXISTS usuarios (
     id SERIAL PRIMARY KEY,
-    nome VARCHAR(50) NOT NULL,
+    nome VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(150) NOT NULL UNIQUE,
     senha_hash VARCHAR(255) NOT NULL,
     perfil SMALLINT NOT NULL CHECK (perfil IN (0,1)), 
@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS ingredientes (
     metrica metrica_enum NOT NULL,
     usuario_id INT NOT NULL REFERENCES usuarios(id),
     data_criacao TIMESTAMP NOT NULL DEFAULT now(),
-    data_atualizacao TIMESTAMP NOT NULL DEFAULT now()
+    data_atualizacao TIMESTAMP NOT NULL DEFAULT now(),
+    CONSTRAINT unique_usuario_ingrediente UNIQUE(usuario_id, nome)
 );
 
 CREATE TABLE IF NOT EXISTS receitas (
@@ -30,7 +31,8 @@ CREATE TABLE IF NOT EXISTS receitas (
     imagem_url VARCHAR(255),
     preco NUMERIC(5,2) NOT NULL,
     data_criacao TIMESTAMP NOT NULL DEFAULT now(),
-    data_atualizacao TIMESTAMP NOT NULL DEFAULT now()
+    data_atualizacao TIMESTAMP NOT NULL DEFAULT now(),
+    CONSTRAINT unique_usuario_receita UNIQUE(usuario_id, nome)
 );
 
 CREATE TABLE IF NOT EXISTS receitas_ingredientes (
