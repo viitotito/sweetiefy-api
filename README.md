@@ -280,10 +280,42 @@ npm run dev
 
 ## System Design
 
-- [Diagrama de Contexto (NVL 1)](docs/system-design/sweetiefy-context.drawio.png)
-- [Diagrama de Containers (NVL 2](docs/system-design/sweetiefy-container.drawio.png)
-- [Diagrama ERD Essencial)](docs/system-design/sweetiefy-erd-essential.drawio.png)
+- [Diagrama de Contexto](docs/system-design/sweetiefy-context.drawio.png)
+- [Diagrama de Containers](docs/system-design/sweetiefy-container.drawio.png)
+- [Diagrama ERD Essencial](docs/system-design/sweetiefy-erd-essential.drawio.png)
 - [ERD PostgreSQL](docs/system-design/sweetiefy-erd-postgresql.drawio.png)
+
+<details>
+<summary>Diagramas Seq Usuários</summary>
+     
+- [Register](docs/system-design/sweetiefy-sequence-user-register.png)
+- [Login](docs/system-design/sweetiefy-sequence-user-login.png)
+- [Logout](docs/system-design/sweetiefy-sequence-user-logout.png)
+- [Refresh](docs/system-design/sweetiefy-sequence-user-refresh.png)
+- [List](docs/system-design/sweetiefy-sequence-user-list.png)
+- [Delete](docs/system-design/sweetiefy-sequence-user-delete.png)
+- [Get](docs/system-design/sweetiefy-sequence-user-get.png)
+- [Edit](docs/system-design/sweetiefy-sequence-user-edit.png)
+</details>
+
+<details>
+<summary>Diagramas Seq Ingredientes</summary>
+     
+- [Create](docs/system-design/sweetiefy-sequence-ingredient-create.png)
+- [Edit](docs/system-design/sweetiefy-sequence-ingredient-edit.png)
+- [Get](docs/system-design/sweetiefy-sequence-ingredient-get.png)
+- [List](docs/system-design/sweetiefy-sequence-ingredient-list.png)
+- [Delete](docs/system-design/sweetiefy-sequence-ingredient-delete.png)
+</details>
+<details>
+<summary>Diagramas Seq Receitas</summary>
+     
+- [Create](docs/system-design/sweetiefy-sequence-recipe-create.png)
+- [Edit](docs/system-design/sweetiefy-sequence-recipe-edit.png)
+- [Get](docs/system-design/sweetiefy-sequence-recipe-get.png)
+- [List](docs/system-design/sweetiefy-sequence-recipe-list.png)
+- [Delete](docs/system-design/sweetiefy-sequence-recipe-delete.png)
+</details>
 
 ---
 ## Licença
