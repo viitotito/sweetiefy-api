@@ -16,7 +16,9 @@
 9. [Endpoints](#endpoints)
 10. [Comandos](#comandos)
 11. [Erros](#erros)
-12. [Licença](#licença)
+12. [System Design](#system-design)
+13. [Licença](#licença)
+
 
 ---
 ## Introdução
@@ -276,6 +278,14 @@ npm run dev
 
 ---
 
+## System Design
+
+- [Diagrama de Contexto (NVL 1)](system-design/sweetiefy-context.drawio)
+- [Diagrama de Containers (NVL 2](system-design/sweetiefy-container.drawio)
+- [Diagrama ERD Essencial)](system-design/sweetiefy-erd-essential.drawio)
+- [ERD PostgreSQL](system-design/sweetiefy-erd-postgresql.drawio)
+
+---
 ## Licença
 
 MIT — sinta-se à vontade para usar/estudar o projeto. Modifique conforme necessidade.
