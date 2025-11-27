@@ -1,137 +1,72 @@
-# Sweetiefy
+# 🍬 Sweetiefy
+> O espaço ideal para gerenciar seus quitutes.
 
-## 💡 Problema 
+[![Node.js](https://img.shields.io/badge/node-%3E%3D16-green)](#) [![License](https://img.shields.io/badge/license-MIT-blue)](#)
+
+## Sumário
+
+1. [Introdução](#introdução)
+2. [Problema](#problema)
+3. [Objetivo](#objetivo)
+4. [Atores](#atores)
+5. [Funcionalidades](#funcionalidades)
+6. [Tecnologias](#tecnologias)
+7. [Modelo de Dados](#modelo-de-dados)
+8. [Rodando Localmente](#rodando-localmente)
+9. [Endpoints](#endpoints)
+10. [Comandos](#comandos)
+11. [Erros](#erros)
+12. [Licença](#licença)
+
+---
+## Introdução
+`Sweetiefy-api` é uma API criada com [node.js](https://nodejs.org/pt) + [express](https://expressjs.com/) para gerenciar receitas pessoais.
+
+---
+
+## Problema 
 Muitas vezes confeiteiros possuem problemas na hora de estipular preços para as vendas de seus produtos, seja por conta da inflação dos valores de ingredientes ou por estarem trabalhando com uma margem de lucro muito baixa, podendo consequentemente levar a prejuízos.
 
-Diante disto, o Sweetiefy tem como objetivo auxiliar os vendedores na gestão e precificação de receitas de doces. 
+---
+## Objetivo
+O Sweetiefy tem como objetivo auxiliar os vendedores na gestão e precificação de receitas de doces. 
 
-O sistema deve permitir o usuário cadastrar e definir o preço de cada receita, sendo possível também estimar o lucro por cada venda. 
+---
+## Atores
+* **Usuários gerais**: criar, editar, excluir e visualizar seus ingredientes e receitas.
+* **Administradores**: criar, editar, excluir e visualizar todos os ingredientes, receitas e usuários.
 
-O valor de custo por receita também deve ser visualizado e alterado, sendo atualizado ao selecionar os ingredientes para uma determinada receita.
+---
+## Funcionalidades
+- **Autenticação (email/senha)**
+- **Perfis (user/admin)**
+- **Listagem, edição, criação e exclusão de ingredientes.**
+- **Listagem, edição, criação e exclusão de receitas.**
+- **Listagem, edição e exclusão de usuários (admin).**
 
-## 👥 Atores / Decisores
-* Atores: Usuários gerais, confeiteiros.
-* Decisores/Apoiadores: Professores; Coordenação do Curso.
+Critérios de aceite: logar no sistema como usuário → criar ingrediente → ingrediente aparece com informações → logar no sistema como administrador → editar ingrediente → o ingrediente tem sua informação alterada.
 
-## 🛠 Casos de uso
-* Usuários: Logar/deslogar, CRUD usuários.
-* Receitas: CRUD receitas.
-* Ingredientes: CRUD ingredientes.
+---
 
-## ⌛ Limites e suposições
-### Limites
-- Entrega até o final da disciplina (2025-11-30);
-- Rodar no navegador;
-- Sem serviços pagos.
+## Tecnologias
 
-### Suposições
-- Internet no laboratório;
-- Testes rápidos (10 min no máximo);
-- Navegador atualizado;
-- Acesso ao repositório no Github.
+### Front-end 
+- **Front-end (servidor):** [React](https://react.dev/) + [Bootstrap](https://getbootstrap.com/)
+- **Hospedagem:** [Vercel](https://vercel.com/)
 
-### Plano B
-- Sem internet: Rodar localmente e salvar dados em LocalStorage ou arquivo;
-- Sem tempo do professor: Realizar testes com outros 3 usuários.
+---
+### Back-end
+- **Back-end (API):** [Node.js](https://nodejs.org/pt) + [Express](https://expressjs.com/)
+- **Deploy do back-end:** [Render](https://render.com/)
 
-## ✔️ Hipóteses e validação
-Valor: Se o usuário visualiza os ingredientes cadastrados, consegue organizar melhor suas receitas.
+---
+### Banco de dados
+- **Banco de Dados:** [Postgres](https://www.postgresql.org/)
+- **Instância do provedor:** [Render](https://render.com/)
 
-Validação: Teste com 4 usuários distintos em máquinas diferentes. Sucesso caso 3≥ conseguem visualizar os registros corretamente.
+---
 
-Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mínimo 17/20 (9/10) ações com no máximo 1s de resposta.
-
-## 📈 Fluxo principal e primeira fatia
-**Fluxo principal (curto):**
-1) Usuário entra no site;
-2) Usuário faz login ou cadastro;
-3) Usuário clica em adicionar ingredientes;
-4) Usuário salva os ingredientes;
-5) Ingredientes são exibidos ao usuário.
-
-## 💻 Esboços de algumas telas (wireframes)
-![Wireframe - Login](wireframes/WF_Login.png)
-![Wireframe - Cadastro](wireframes/WF_Cadastro.png)
-![Wireframe - Ingredientes](wireframes/WF_Ingredientes.png)
-
-## ⚙️ Tecnologias
-
-### 8.1 Navegador
-**Navegador:** [HTML/CSS/JS/Bootstrap]
-
-**Armazenamento local (se usar):** [LocalStorage]
-
-**Hospedagem:** [GitHub Pages]
-
-### 8.2 Front-end (servidor de aplicação, se existir)
-**Front-end (servidor):** [React]
-
-**Hospedagem:** [GitHub Pages]
-
-### 8.3 Back-end (API/servidor, se existir)
-**Back-end (API):** [Javascript + Express]
-
-**Banco de dados:** [Postgres/MySQL]
-
-**Deploy do back-end:** [Render] "Verificando possibilidades de uso"
-
-## 📋 Plano de Dados (Dia 0) — somente itens 1–3
-
-### 9.1 Entidades
-- Usuarios — Representa os indivíduos que utilizaram o sistema
-- Ingredientes — Representa os ingredientes utilizados em receitas
-- Receitas — Representa as receitas criadas no sistema
-
-### 9.2 Campos por entidade
-
-### Usuarios
-| Campo | Tipo | Obrigatório | Exemplo |
-|-----------------|-------------------------------|-------------|--------------------|
-| id | número | sim | 1 |
-| nome | texto | sim | "Ana Souza" |
-| email | texto | sim (único) | "ana@exemplo.com" |
-| senha_hash | texto | sim | "$2a$10$..." |
-| papel | número (0=comum, 1=administrador) | sim | 0 |
-| dataCriacao | data/hora | sim | 2025-08-20 14:30 |
-| dataAtualizacao | data/hora | sim | 2025-08-20 15:10 |
-
-### Ingredientes
-| Campo | Tipo | Obrigatório | Exemplo |
-|-----------------|--------------------|-------------|-------------------------|
-| id | número | sim | 2 |
-| nome | texto | sim | "Chocolate Granulado" |
-| preco | número | sim | 4,99 |
-| metrica | enum | sim | 1 |
-| usuario_id | número (fk) | sim | 1 |
-| dataCriacao | data/hora | sim | 2025-08-20 14:30 |
-| dataAtualizacao | data/hora | sim | 2025-08-20 15:10 |
-
-### Receitas
-| Campo | Tipo | Obrigatório | Exemplo |
-|-----------------|--------------------|-------------|-------------------------|
-| id | número | sim | 3 |
-| nome | texto | sim | "Casadinho" |
-| descricao | texto | não | "2 caixas de leite condensado..." |
-| usuario_id | número (fk) | sim | 1 |
-| imagem_url | texto | não | /imagem/doce.png |
-| preco | número | sim | 4,99 |
-| dataCriacao | data/hora | sim | 2025-08-20 14:30 |
-| dataAtualizacao | data/hora | sim | 2025-08-20 15:10 |
-
-### Receitas_Ingredientes
-| Campo | Tipo | Obrigatório | Exemplo |
-|-----------------|--------------------|-------------|-------------------------|
-| id | número | sim | 3 |
-| receita_id | número (fk) | sim | 1 |
-| ingrediente_id | número (fk) | sim | 1 |
-| quantidade | número | sim | 3 |
-
-### 9.3 Relações entre entidades
-- Receitas ↔ Ingredientes (N↔N) → tabela Receitas_Ingredientes
-- Usuarios → Receitas (1→N)
-- Usuarios → Ingredientes (1→N)
-
-### 9.4 Modelagem Postgres
+## Modelo de Dados
 <details>
      <summary>Comandos DDL</summary>
 
@@ -140,45 +75,47 @@ Viabilidade: Medição no protótipo com 20 ações diferentes, atendendo no mí
 CREATE TYPE metrica_enum AS ENUM ('Kg', 'g', 'L', 'ml', 'unidade', 'mg');
 
 --Criação da tabela usuários
-CREATE TABLE usuarios (
+CREATE TABLE IF NOT EXISTS usuarios (
     id SERIAL PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
+    nome VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(150) NOT NULL UNIQUE,
     senha_hash VARCHAR(255) NOT NULL,
-    perfil SMALLINT NOT NULL CHECK (perfil IN (0,1)), -- Usuario,Admin
-    data_criacao TIMESTAMP NOT NULL,
-    data_atualizacao TIMESTAMP NOT NULL
+    perfil SMALLINT NOT NULL CHECK (perfil IN (0,1)), 
+    data_criacao TIMESTAMP NOT NULL DEFAULT now(),
+    data_atualizacao TIMESTAMP NOT NULL DEFAULT now()
 );
 
 --Criação da tabela ingredientes
-CREATE TABLE ingredientes (
+CREATE TABLE IF NOT EXISTS ingredientes (
     id SERIAL PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
-    preco DECIMAL(10,2) NOT NULL,
+    nome VARCHAR(150) NOT NULL,
+    preco NUMERIC(5,2) NOT NULL,
     metrica metrica_enum NOT NULL,
     usuario_id INT NOT NULL REFERENCES usuarios(id),
-    data_criacao TIMESTAMP NOT NULL,
-    data_atualizacao TIMESTAMP NOT NULL
+    data_criacao TIMESTAMP NOT NULL DEFAULT now(),
+    data_atualizacao TIMESTAMP NOT NULL DEFAULT now(),
+    CONSTRAINT unique_usuario_ingrediente UNIQUE(usuario_id, nome)
 );
 
 --Criação da tabela receitas
-CREATE TABLE receitas (
+CREATE TABLE IF NOT EXISTS receitas (
     id SERIAL PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
+    nome VARCHAR(150) NOT NULL UNIQUE,
     descricao VARCHAR(255),
     usuario_id INT NOT NULL REFERENCES usuarios(id),
     imagem_url VARCHAR(255),
-    preco NUMERIC(10,2) NOT NULL,
-    data_criacao TIMESTAMP NOT NULL,
-    data_atualizacao TIMESTAMP NOT NULL
+    preco NUMERIC(5,2) NOT NULL,
+    data_criacao TIMESTAMP NOT NULL DEFAULT now(),
+    data_atualizacao TIMESTAMP NOT NULL DEFAULT now(),
+    CONSTRAINT unique_usuario_receita UNIQUE(usuario_id, nome)
 );
 
 --Criação da tabela auxiliar receitas_ingredientes
-CREATE TABLE receitas_ingredientes (
+CREATE TABLE IF NOT EXISTS receitas_ingredientes (
     id SERIAL PRIMARY KEY,
     receita_id INT NOT NULL REFERENCES receitas(id),
     ingrediente_id INT NOT NULL REFERENCES ingredientes(id),
-    quantidade DECIMAL(10,2) NOT NULL
+    quantidade INT NOT NULL
 );
 ```
 </details>
@@ -189,28 +126,38 @@ CREATE TABLE receitas_ingredientes (
 ```sql
 
 --Inserção usuários
-INSERT INTO usuarios (nome, email, senha_hash, perfil, data_criacao, data_atualizacao)
+INSERT INTO usuarios (nome, email, senha_hash, perfil)
 VALUES
-('Ana Souza', 'ana@exemplo.com', '$2a$10$abcdef...', 0, NOW(), NOW()),
-('João Silva', 'joao@exemplo.com', '$2a$10$ghijkl...', 1, NOW(), NOW());
+('User', 'user@user.com', '$2b$12$lrXlY35ejtBP...jVXu6iI17Fw...', 0),
+('Admin', 'admin@admin.com', '$2b$12$nOa54B81W12o3d46D...9NDXzTyJ5nMWtkK...', 1);
 
 --Inserção ingredientes
-INSERT INTO ingredientes (nome, preco, metrica, usuario_id, data_criacao, data_atualizacao)
+INSERT INTO ingredientes (nome, preco, metrica, usuario_id)
 VALUES
-('Chocolate Granulado', 4.99, 'Kg', 1, NOW(), NOW()),
-('Leite Condensado', 7.50, 'L', 2, NOW(), NOW());
+('Chocolate Granulado', 4.99, 'Kg', 1),
+('Leite Condensado', 7.50, 'L', 2),
+('Farinha de Trigo', 3.20, 'Kg', 1),
+('Manteiga', 6.80, 'Kg', 2),
+('Açúcar Refinado', 2.90, 'Kg', 1);
 
 --Inserção receitas
-INSERT INTO receitas (nome, descricao, usuario_id, imagem_url, preco, data_criacao, data_atualizacao)
+INSERT INTO receitas (nome, descricao, usuario_id, imagem_url, preco)
 VALUES
-('Casadinho', '2 caixas de leite condensado e 200g de chocolate', 1, '/imagens/casadinho.png', 4.99, NOW(), NOW()),
-('Brigadeiro', 'Leite condensado, chocolate em pó e manteiga', 2, '/imagens/brigadeiro.png', 3.50, NOW(), NOW());
+('Casadinho', '2 caixas de leite condensado e 200g de chocolate', 1, '/uploads/1764215136287-531151868.png', 4.99),
+('Brigadeiro', 'Leite condensado, chocolate em pó e manteiga', 2, '/uploads/17642315136287-531151868.png', 3.50),
+('Beijinho', 'Leite condensado, coco ralado e açúcar cristal para enrolar', 1, '/uploads/1763235136287-531151868.png', 3.80),
+('Cajuzinho', 'Amendoim moído, chocolate em pó e leite condensado', 2, '/uploads/1764215321287-531151868.png', 4.20),
+('Palha Italiana', 'Bolacha maisena triturada com brigadeiro', 1, '/uploads/1761554236287-52351868.png', 5.50);
+
 
 --Inserção receitas_ingredientes
 INSERT INTO receitas_ingredientes (receita_id, ingrediente_id, quantidade)
 VALUES
-(1, 1, 200),
-(2, 2, 1.5);
+(1, 1, 2),
+(2, 2, 1),
+(3, 3, 4),
+(4, 4, 3),
+(5, 5, 4); 
 ```
 </details>
 
@@ -239,54 +186,96 @@ HAVING COUNT(r.id) > 1;
 ```
 </details>
 
-## 🛠️ Rodando Localmente
+---
+## Rodando Localmente
 ### Pré-requisitos
 - [Node.Js Download](https://www.nodejs.tech/pt-br/download)
 - [PostgreSQL Download](https://www.postgresql.org/download/)
 
-### Modificação do arquivo `.env`
-```javascript
-# Porta da API
-PORT=3000
-
-# Postgres
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=senhabanco
-DB_DATABASE=sweetiefy_api_db
-```
-
-
-### Instalando dependências
-```npm
-npm install
-npm run dev 
-```
-
-### Testando com `curl`
+---
+1. Clone o repositório
 ```bash
-📋 Listar todos os ingredientes
-curl http://localhost:3000/api/ingredientes
-
-🔍 Mostrar ingrediente por ID
-curl http://localhost:3000/api/ingredientes/1
-
-➕ Criar ingrediente
-curl -X POST http://localhost:3000/api/ingredientes \
-  -H "Content-Type: application/json" \
-  -d '{"Usuarios_id":1,"texto":"Farinha de trigo","estado":"a","urlImagem":"http://exemplo.com/farinha.png"}'
-
-✏️ Atualizar (PUT) - envia todos os campos
-curl -X PUT http://localhost:3000/api/ingredientes/1 \
-  -H "Content-Type: application/json" \
-  -d '{"Usuarios_id":1,"texto":"Farinha integral","estado":"f","urlImagem":null}'
-
-✏️ Atualizar parcialmente (PATCH) - só alguns campos
-curl -X PATCH http://localhost:3000/api/ingredientes/1 \
-  -H "Content-Type: application/json" \
-  -d '{"texto":"Farinha integral orgânica"}'
-
-❌ Deletar ingrediente
-curl -X DELETE http://localhost:3000/api/ingredientes/1
+git clone https://github.com/viitotito/sweetiefy-api.git
+cd sweetiefy-api
 ```
+---
+2. Copie o `.env.example` para `.env` e ajuste as variáveis (ex.: DB_HOST, DB_USER, DB_PASSWORD, PORT).
+```bash
+copy .env.example .env
+```
+---
+3. Instale dependências
+```bash
+npm install
+```
+---
+4. Crie banco e tabelas
+```bash
+npm run reset-database
+```
+---
+5. Rode em modo desenvolvimento
+```bash
+npm run dev
+```
+---
+
+## Endpoints
+
+> Rota base: `http://localhost:<PORT>/api`
+
+### Usuários
+
+* `POST /api/register` — registra usuário (body: `{ nome, email, senha }`)
+* `POST /api/login` — autentica usuário (body: `{ email, senha }`) → retorna token de acesso
+* `POST /api/refresh` — renova o token de acesso através do refresh token no cookie → retorna novo token de acesso
+* `POST /api/logout` — encerra a sessão do usuário → limpa o refresh token no cookie
+
+* `GET /api/usuarios` — lista usuários
+* `GET /api/usuarios/:id` — visualiza usuário
+* `PATCH /api/usuarios/:id` — atualiza parcialmente usuário (body: `{ nome, email, perfil, senha }`)
+* `DELETE /api/usuarios` — deleta usuário 
+
+### Ingredientes
+
+* `GET /api/ingredientes` — lista ingredientes
+* `GET /api/ingredientes/:id` — visualiza ingrediente
+* `POST /api/ingredientes` — cria ingrediente (body: `{ nome, preco, metrica }`)
+* `PUT /api/ingredientes/:id` — atualiza ingrediente (body: `{ nome, preco, metrica }`)
+* `PATCH /api/ingredientes/:id` — atualiza parcialmente ingrediente (body: `{ nome, preco, metrica }`)
+* `DELETE /api/ingredientes/:id` — deleta ingrediente
+
+### Receitas
+
+* `GET /api/receitas` — lista ingredientes
+* `GET /api/receitas/:id` — visualiza receita
+* `POST /api/receitas` — cria receita (body: `{ nome, descricao?, preco, imagem_url?, ingredientes}`)
+* `PUT /api/receitas/:id` — atualiza receita (body: `{ nome, descricao?, preco, imagem_url?, ingredientes}`)
+* `PATCH /api/receitas/:id` — atualiza parcialmente receita (body: `{ nome, descricao?, preco, imagem_url?, ingredientes}`)
+* `DELETE /api/receitas/:id` — deleta receita
+  
+**Resposta de erro padrão**:
+
+```json
+{ "erro": "problema explicado" }
+```
+
+---
+
+## Comandos
+
+* `npm run dev` — roda em modo desenvolvimento
+* `npm run reset-database` — cria/zera banco
+
+---
+
+## Erros
+
+* Conexão com banco → ver arquivo `.env` na raiz do projeto (host/port/user/senha).
+* Arquivo `.env` não existe na raiz do projeto → criar arquivo `.env` na raiz do projeto com base no arquivo `.env.example`
+
+---
+
+## Licença
+
+MIT — sinta-se à vontade para usar/estudar o projeto. Modifique conforme necessidade.
