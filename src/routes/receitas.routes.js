@@ -87,6 +87,8 @@ function validarDescricao(descricao) {
   if (!descricao) return null;
   if (typeof descricao !== "string") return "Descrição deve ser uma string.";
   if (descricao.length > 255) return "Descrição deve ter no máximo 255 caracteres.";
+  const descricaoRegex = /^[a-zA-ZáàâãéèêíïóôõúüçÁÀÂÃÉÈÊÍÏÓÔÕÚÜÇ][a-zA-Z0-9áàâãéèêíïóôõúüçÁÀÂÃÉÈÊÍÏÓÔÕÚÜÇ\s.,!?-]$/;
+  if (!descricaoRegex.test(descricao)) return "Descrição contém caracteres inválidos.";
   return null;
 }
 
