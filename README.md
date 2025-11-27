@@ -280,10 +280,10 @@ npm run dev
 
 ## System Design
 
-- [Diagrama de Contexto (NVL 1)](system-design/sweetiefy-context.drawio)
-- [Diagrama de Containers (NVL 2](system-design/sweetiefy-container.drawio)
-- [Diagrama ERD Essencial)](system-design/sweetiefy-erd-essential.drawio)
-- [ERD PostgreSQL](system-design/sweetiefy-erd-postgresql.drawio)
+- [Diagrama de Contexto (NVL 1)](docs/system-design/sweetiefy-context.drawio.png)
+- [Diagrama de Containers (NVL 2](docs/system-design/sweetiefy-container.drawio.png)
+- [Diagrama ERD Essencial)](docs/system-design/sweetiefy-erd-essential.drawio.png)
+- [ERD PostgreSQL](docs/system-design/sweetiefy-erd-postgresql.drawio.png)
 
 ---
 ## Licença
