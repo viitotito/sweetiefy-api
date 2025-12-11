@@ -211,12 +211,19 @@ copy .env.example .env
 npm install
 ```
 ---
-4. Crie banco e tabelas
+
+4. Copie e substitua os valores de .env.template para .env
+```bash
+copy .env.example .env
+```
+---
+
+5. Crie banco e tabelas
 ```bash
 npm run reset-database
 ```
 ---
-5. Rode em modo desenvolvimento
+6. Rode em modo desenvolvimento
 ```bash
 npm run dev
 ```
