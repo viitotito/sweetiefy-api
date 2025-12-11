@@ -11,13 +11,14 @@
 4. [Atores](#atores)
 5. [Funcionalidades](#funcionalidades)
 6. [Tecnologias](#tecnologias)
-7. [Modelo de Dados](#modelo-de-dados)
-8. [Rodando Localmente](#rodando-localmente)
-9. [Endpoints](#endpoints)
-10. [Comandos](#comandos)
-11. [Erros](#erros)
-12. [System Design](#system-design)
-13. [Licença](#licença)
+7. [Wireframes](#wireframes)
+8. [Modelo de Dados](#modelo-de-dados)
+9. [Rodando Localmente](#rodando-localmente)
+10. [Endpoints](#endpoints)
+11. [Comandos](#comandos)
+12. [Erros](#erros)
+13. [System Design](#system-design)
+14. [Licença](#licença)
 
 
 ---
@@ -67,7 +68,11 @@ Critérios de aceite: logar no sistema como usuário → criar ingrediente → i
 - **Instância do provedor:** [Render](https://render.com/)
 
 ---
-
+## Wireframes
+- [Register](wireframes/WF_Cadastro.png)
+- [Login](wireframes/WF_Login.png)
+- [Ingredientes](wireframes/WF_Ingredientes.png)
+---
 ## Modelo de Dados
 <details>
      <summary>Comandos DDL</summary>
